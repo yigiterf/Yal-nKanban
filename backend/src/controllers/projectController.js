@@ -1,5 +1,6 @@
 const Project = require('../models/projectModel');
 const ProjectMember = require('../models/projectMemberModel');
+const pool = require('../config/db');
 
 // POST /api/projects — Yeni proje oluştur
 const createProject = async (req, res) => {
@@ -38,13 +39,20 @@ const getProjects = async (req, res) => {
   }
 };
 
-// GET /api/projects/:id — Tek projeyi getir
+// GET /api/projects/:id — Tek projeyi getir (üyelik kontrolü ile)
 const getProjectById = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
     if (!project) {
       return res.status(404).json({ message: 'Proje bulunamadı.' });
     }
+
+    // Üyelik kontrolü — sadece proje üyeleri görebilir
+    const isMember = await ProjectMember.isMember(req.params.id, req.user.id);
+    if (!isMember) {
+      return res.status(403).json({ message: 'Bu projeye erişim yetkiniz yok.' });
+    }
+
     res.json(project);
   } catch (error) {
     console.error('getProjectById hatası:', error);
@@ -167,6 +175,53 @@ const removeProjectMember = async (req, res) => {
   }
 };
 
+// GET /api/projects/:id/stats — Proje istatistikleri
+const getProjectStats = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.user.id;
+
+    // Üyelik kontrolü
+    const isMember = await ProjectMember.isMember(projectId, userId);
+    if (!isMember) {
+      return res.status(403).json({ message: 'Bu projeye erişim yetkiniz yok.' });
+    }
+
+    // Durum bazlı görev sayıları
+    const [statusRows] = await pool.execute(
+      `SELECT 
+         status, 
+         COUNT(*) AS count 
+       FROM Tasks 
+       WHERE project_id = ? 
+       GROUP BY status`,
+      [projectId]
+    );
+
+    // Toplam görev
+    const total = statusRows.reduce((sum, r) => sum + r.count, 0);
+    const done = statusRows.find((r) => r.status === 'done')?.count || 0;
+    const todo = statusRows.find((r) => r.status === 'todo')?.count || 0;
+    const inProgress = statusRows.find((r) => r.status === 'in_progress')?.count || 0;
+    const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    // Üye sayısı
+    const members = await ProjectMember.findByProject(projectId);
+
+    res.json({
+      total,
+      todo,
+      inProgress,
+      done,
+      completionRate,
+      memberCount: members.length,
+    });
+  } catch (error) {
+    console.error('getProjectStats hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
+  }
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -176,4 +231,5 @@ module.exports = {
   getProjectMembers,
   addProjectMember,
   removeProjectMember,
+  getProjectStats,
 };

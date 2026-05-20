@@ -1,6 +1,9 @@
 const Task = require('../models/taskModel');
 const Project = require('../models/projectModel');
 const User = require('../models/userModel');
+const ProjectMember = require('../models/projectMemberModel');
+const ActivityLog = require('../models/activityLogModel');
+const Notification = require('../models/notificationModel');
 
 const VALID_STATUSES = ['todo', 'in_progress', 'done'];
 
@@ -100,7 +103,25 @@ const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: 'Görev bulunamadı.' });
     }
 
+    // Üyelik kontrolü
+    const isMember = await ProjectMember.isMember(task.project_id, req.user.id);
+    if (!isMember) {
+      return res.status(403).json({ message: 'Bu projenin üyesi değilsiniz.' });
+    }
+
+    const oldStatus = task.status;
     await Task.updateStatus(req.params.id, status);
+
+    // Aktivite logu
+    await ActivityLog.create(
+      task.project_id,
+      req.user.id,
+      'status_changed',
+      'task',
+      task.id,
+      { taskTitle: task.title, oldStatus, newStatus: status }
+    );
+
     res.json({ message: 'Görev durumu güncellendi.', status });
   } catch (error) {
     console.error('updateTaskStatus hatası:', error);
@@ -118,15 +139,42 @@ const assignTask = async (req, res) => {
       return res.status(404).json({ message: 'Görev bulunamadı.' });
     }
 
+    // Üyelik kontrolü
+    const isMember = await ProjectMember.isMember(task.project_id, req.user.id);
+    if (!isMember) {
+      return res.status(403).json({ message: 'Bu projenin üyesi değilsiniz.' });
+    }
+
     // Atanacak kullanıcının var olduğunu doğrula
     if (userId) {
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({ message: 'Atanacak kullanıcı bulunamadı.' });
       }
+
+      // Atanan kişiye bildirim gönder
+      if (userId !== req.user.id) {
+        await Notification.create(
+          userId,
+          'task_assigned',
+          `${req.user.username} sizi "${task.title}" görevine atadı.`,
+          `/board/${task.project_id}`
+        );
+      }
     }
 
     await Task.updateAssignee(req.params.id, userId || null);
+
+    // Aktivite logu
+    await ActivityLog.create(
+      task.project_id,
+      req.user.id,
+      'task_assigned',
+      'task',
+      task.id,
+      { taskTitle: task.title, assignedTo: userId }
+    );
+
     res.json({ message: 'Görev atama güncellendi.' });
   } catch (error) {
     console.error('assignTask hatası:', error);
@@ -190,7 +238,30 @@ const deleteTask = async (req, res) => {
       return res.status(404).json({ message: 'Görev bulunamadı.' });
     }
 
+    // Üyelik kontrolü
+    const isMember = await ProjectMember.isMember(task.project_id, req.user.id);
+    if (!isMember) {
+      return res.status(403).json({ message: 'Bu projenin üyesi değilsiniz.' });
+    }
+
+    // Proje sahibi kontrolü — sadece sahip silebilir
+    const project = await Project.findById(task.project_id);
+    if (project.created_by !== req.user.id) {
+      return res.status(403).json({ message: 'Sadece proje yöneticisi görev silebilir.' });
+    }
+
     await Task.delete(req.params.id);
+
+    // Aktivite logu
+    await ActivityLog.create(
+      task.project_id,
+      req.user.id,
+      'task_deleted',
+      'task',
+      task.id,
+      { taskTitle: task.title }
+    );
+
     res.json({ message: 'Görev başarıyla silindi.' });
   } catch (error) {
     console.error('deleteTask hatası:', error);

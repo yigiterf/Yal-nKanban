@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import BoardPage from './pages/BoardPage';
 import MyTasks from './pages/MyTasks';
+import ProfilePage from './pages/ProfilePage';
 import AppLayout from './layouts/AppLayout';
 import './App.css';
 
@@ -33,6 +34,14 @@ function App() {
             element={
               <PrivateRoute>
                 <AppLayout><MyTasks /></AppLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <AppLayout><ProfilePage /></AppLayout>
               </PrivateRoute>
             }
           />

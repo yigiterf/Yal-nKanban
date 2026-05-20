@@ -24,8 +24,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - ./backend/src:/usr/src/app/src
       - ./backend/index.js:/usr/src/app/index.js
@@ -46,6 +47,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "5173:5173"
     volumes:
@@ -54,7 +56,7 @@ services:
       - ./frontend/vite.config.js:/usr/src/app/vite.config.js
       # node_modules container'da kalır, host'tan override edilmez
     environment:
-      - VITE_API_URL=http://localhost:5000/api
+      - VITE_API_URL=http://localhost:5001/api
     depends_on:
       - backend
     command: npm run dev -- --host 0.0.0.0

@@ -53,7 +53,7 @@ const login = async (req, res) => {
 
     const token = jwt.sign(
       payload, 
-      process.env.JWT_SECRET || 'supersecret123', 
+      process.env.JWT_SECRET, 
       { expiresIn: '1d' }
     );
 

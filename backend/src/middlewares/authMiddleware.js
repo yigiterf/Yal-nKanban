@@ -8,13 +8,22 @@ const authMiddleware = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
+  if (!process.env.JWT_SECRET) {
+    console.error('CRITICAL: JWT_SECRET is not set in environment variables!');
+    return res.status(500).json({ message: 'Sunucu yapılandırma hatası.' });
+  }
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret123');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // controller'larda req.user olarak erişilebilir
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Token geçersiz veya süresi dolmuş.' });
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token süresi dolmuş. Lütfen tekrar giriş yapın.' });
+    }
+    res.status(401).json({ message: 'Token geçersiz.' });
   }
 };
 
 module.exports = authMiddleware;
+

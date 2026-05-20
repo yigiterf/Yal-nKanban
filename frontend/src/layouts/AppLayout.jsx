@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
+import NotificationDropdown from '../components/NotificationDropdown';
 
 const AppLayout = ({ children }) => {
   const { pathname } = useLocation();
@@ -166,6 +167,11 @@ const AppLayout = ({ children }) => {
 
         {/* Footer Area */}
         <div className="p-4 border-top">
+          {/* Notification Dropdown */}
+          <div className="mb-3">
+            <NotificationDropdown />
+          </div>
+
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -176,14 +182,24 @@ const AppLayout = ({ children }) => {
             <span>{theme === 'light' ? 'Karanlık Tema' : 'Aydınlık Tema'}</span>
           </button>
 
-          <div className="d-flex align-items-center gap-3 mb-3">
+          {/* Profile Section */}
+          <Link
+            to="/profile"
+            className="d-flex align-items-center gap-3 mb-3 p-2 rounded-3 text-decoration-none transition-all"
+            style={{
+              backgroundColor: pathname === '/profile' ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+              color: 'var(--custom-text)',
+              borderLeft: `3px solid ${pathname === '/profile' ? 'var(--custom-primary)' : 'transparent'}`,
+              paddingLeft: pathname === '/profile' ? '8px' : '11px',
+            }}
+          >
             <div
-              className="rounded-circle d-flex align-items-center justify-content-center bg-light fw-bold"
+              className="rounded-circle d-flex align-items-center justify-content-center bg-light fw-bold flex-shrink-0"
               style={{ width: '40px', height: '40px', color: 'var(--custom-primary)' }}
             >
               {getInitials(user?.username)}
             </div>
-            <div className="text-truncate">
+            <div className="text-truncate flex-grow-1">
               <p className="fw-semibold mb-0 text-truncate" style={{ color: 'var(--custom-text)', fontSize: '14px' }}>
                 {user?.username || 'Kullanıcı'}
               </p>
@@ -191,7 +207,8 @@ const AppLayout = ({ children }) => {
                 {user?.email || ''}
               </p>
             </div>
-          </div>
+          </Link>
+
           <button
             onClick={handleLogout}
             className="btn btn-light w-100 fw-medium d-flex align-items-center justify-content-center gap-2"

@@ -5,6 +5,7 @@ import api from '../services/api';
 import KanbanBoard from '../components/KanbanBoard';
 import TaskModal from '../components/TaskModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ActivityTimeline from '../components/ActivityTimeline';
 
 const PROJECT_COLORS = ['#6366F1', '#10B981', '#EC4899', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
 const PROJECT_EMOJIS = ['📁', '🚀', '💻', '🎨', '📚', '🎯', '🛠️', '📊', '⚡', '🌟', '🧩', '📈'];
@@ -43,6 +44,12 @@ const BoardPage = () => {
   // Toast state
   const [toast, setToast] = useState(null);
 
+  // Filtreler ve aktivite paneli state'leri
+  const [showActivity, setShowActivity] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [assigneeFilter, setAssigneeFilter] = useState('all');
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -78,7 +85,7 @@ const BoardPage = () => {
 
   // --- Görev CRUD İşlemleri (Optimistic UI) ---
 
-  const handleTaskSubmit = async ({ title, description, assignedTo, dueDate }) => {
+  const handleTaskSubmit = async ({ title, description, assignedTo, dueDate, priority, tags, estimatePoints }) => {
     try {
       if (editingTask) {
         // Optimistic: UI'da hemen güncelle
@@ -93,6 +100,9 @@ const BoardPage = () => {
                   assigned_to: assignedTo,
                   assigned_username:
                     members.find((m) => m.user_id == assignedTo)?.username || null,
+                  priority: priority || 'medium',
+                  tags: tags || '',
+                  estimate_points: estimatePoints,
                 }
               : t
           )
@@ -100,12 +110,15 @@ const BoardPage = () => {
         setShowModal(false);
         setEditingTask(null);
 
-        // Tek PATCH çağrısıyla title, description, dueDate ve assignedTo güncelle
+        // Tek PATCH çağrısıyla tüm alanları güncelle
         await api.patch(`/tasks/${editingTask.id}`, {
           title,
           description,
           dueDate,
           assignedTo,
+          priority,
+          tags,
+          estimatePoints,
         });
         showToast('Görev güncellendi.');
       } else {
@@ -119,16 +132,22 @@ const BoardPage = () => {
           assigned_to: assignedTo,
           assigned_username:
             members.find((m) => m.user_id == assignedTo)?.username || null,
+          priority: priority || 'medium',
+          tags: tags || '',
+          estimate_points: estimatePoints,
         };
         setTasks((prev) => [newTask, ...prev]);
         setShowModal(false);
 
-        // Görev oluştur — assignedTo ve dueDate backend'e direkt gönder
+        // Görev oluştur
         const res = await api.post(`/projects/${projectId}/tasks`, {
           title,
           description,
           assignedTo,
           dueDate,
+          priority,
+          tags,
+          estimatePoints,
         });
         const realId = res.data.taskId;
 
@@ -310,6 +329,22 @@ const BoardPage = () => {
   }
 
   const isOwner = project?.created_by === user?.id;
+
+  // Görevleri filtrele
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+
+    const matchesAssignee =
+      assigneeFilter === 'all' ||
+      (assigneeFilter === 'unassigned' && !task.assigned_to) ||
+      task.assigned_to == assigneeFilter;
+
+    return matchesSearch && matchesPriority && matchesAssignee;
+  });
 
   return (
     <div className="container-fluid px-0 h-100 d-flex flex-column">
@@ -510,6 +545,14 @@ const BoardPage = () => {
             </button>
           )}
 
+          {/* Aktivite Butonu */}
+          <button
+            className={`btn btn-sm fw-medium shadow-sm ${showActivity ? 'btn-primary' : 'btn-light'}`}
+            onClick={() => setShowActivity(!showActivity)}
+          >
+            📋 Aktivite {showActivity ? 'Gizle' : 'Göster'}
+          </button>
+
           {/* Yeni görev butonu — sadece proje sahibi oluşturabilir */}
           {isOwner && (
             <button
@@ -581,13 +624,158 @@ const BoardPage = () => {
         </div>
       )}
 
-      {/* Kanban Board */}
-      <KanbanBoard
-        tasks={tasks}
-        onStatusChange={handleStatusChange}
-        onEditTask={handleEditTask}
-        onDeleteTask={requestDeleteTask}
-      />
+      {/* Proje İstatistikleri */}
+      <div className="row g-3 mb-4">
+        <div className="col-6 col-md-3">
+          <div className="card p-3 border-0 shadow-sm d-flex flex-row align-items-center gap-3">
+            <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-primary" style={{ width: '42px', height: '42px', fontSize: '1.2rem' }}>
+              📋
+            </div>
+            <div>
+              <span className="text-muted small d-block" style={{ fontSize: '11px' }}>Toplam Görev</span>
+              <strong className="fs-5" style={{ color: 'var(--custom-text)' }}>{tasks.length}</strong>
+            </div>
+          </div>
+        </div>
+        <div className="col-6 col-md-3">
+          <div className="card p-3 border-0 shadow-sm d-flex flex-row align-items-center gap-3">
+            <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-warning" style={{ width: '42px', height: '42px', fontSize: '1.2rem' }}>
+              ⚡
+            </div>
+            <div>
+              <span className="text-muted small d-block" style={{ fontSize: '11px' }}>Devam Eden</span>
+              <strong className="fs-5" style={{ color: 'var(--custom-text)' }}>{tasks.filter(t => t.status === 'in_progress').length}</strong>
+            </div>
+          </div>
+        </div>
+        <div className="col-6 col-md-3">
+          <div className="card p-3 border-0 shadow-sm d-flex flex-row align-items-center gap-3">
+            <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-success" style={{ width: '42px', height: '42px', fontSize: '1.2rem' }}>
+              ✅
+            </div>
+            <div>
+              <span className="text-muted small d-block" style={{ fontSize: '11px' }}>Tamamlanan</span>
+              <strong className="fs-5" style={{ color: 'var(--custom-text)' }}>{tasks.filter(t => t.status === 'done').length}</strong>
+            </div>
+          </div>
+        </div>
+        <div className="col-6 col-md-3">
+          <div className="card p-3 border-0 shadow-sm d-flex flex-row align-items-center gap-3">
+            <div className="rounded-circle d-flex align-items-center justify-content-center bg-light text-info" style={{ width: '42px', height: '42px', fontSize: '1.2rem' }}>
+              📈
+            </div>
+            <div className="flex-grow-1 min-w-0">
+              <span className="text-muted small d-block" style={{ fontSize: '11px' }}>Tamamlanma</span>
+              <div className="d-flex align-items-center gap-2">
+                <strong className="fs-5" style={{ color: 'var(--custom-text)' }}>
+                  {tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100) : 0}%
+                </strong>
+                <div className="progress flex-grow-1" style={{ height: '6px' }}>
+                  <div
+                    className="progress-bar bg-success"
+                    style={{
+                      width: `${tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100) : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtreleme ve Arama Barı */}
+      <div className="card p-3 border-0 shadow-sm mb-4">
+        <div className="row g-3 align-items-center">
+          {/* Arama */}
+          <div className="col-12 col-md-5">
+            <div className="input-group">
+              <span className="input-group-text bg-light border-0">🔍</span>
+              <input
+                type="text"
+                className="form-control form-control-sm border-0 bg-light"
+                placeholder="Görevlerde ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ fontSize: '13px' }}
+              />
+            </div>
+          </div>
+
+          {/* Öncelik Filtresi */}
+          <div className="col-6 col-md-3">
+            <select
+              className="form-select form-select-sm border-0 bg-light"
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              style={{ fontSize: '13px' }}
+            >
+              <option value="all">Tüm Öncelikler</option>
+              <option value="low">⬇️ Düşük</option>
+              <option value="medium">➡️ Orta</option>
+              <option value="high">⬆️ Yüksek</option>
+              <option value="urgent">🔴 Acil</option>
+            </select>
+          </div>
+
+          {/* Atanan Filtresi */}
+          <div className="col-6 col-md-3">
+            <select
+              className="form-select form-select-sm border-0 bg-light"
+              value={assigneeFilter}
+              onChange={(e) => setAssigneeFilter(e.target.value)}
+              style={{ fontSize: '13px' }}
+            >
+              <option value="all">Tüm Atananlar</option>
+              <option value="unassigned">👤 Atanmamış</option>
+              {members.map((m) => (
+                <option key={m.user_id} value={m.user_id}>
+                  👤 {m.username}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtreleri Temizle */}
+          {(searchQuery || priorityFilter !== 'all' || assigneeFilter !== 'all') && (
+            <div className="col-12 col-md-1 text-md-end">
+              <button
+                className="btn btn-sm btn-link p-0 text-muted"
+                onClick={() => {
+                  setSearchQuery('');
+                  setPriorityFilter('all');
+                  setAssigneeFilter('all');
+                }}
+                style={{ fontSize: '12px' }}
+              >
+                Temizle
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Grid Layout (Kanban Board + Activity Feed) */}
+      <div className="row g-4 flex-grow-1 align-items-stretch">
+        <div className={showActivity ? "col-md-9" : "col-md-12"}>
+          {/* Kanban Board */}
+          <KanbanBoard
+            tasks={filteredTasks}
+            onStatusChange={handleStatusChange}
+            onEditTask={handleEditTask}
+            onDeleteTask={requestDeleteTask}
+          />
+        </div>
+
+        {/* Activity Timeline */}
+        {showActivity && (
+          <div className="col-md-3">
+            <div className="card p-3 border-0 shadow-sm h-100" style={{ minHeight: '400px' }}>
+              <ActivityTimeline projectId={projectId} />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Task Modal */}
       <TaskModal

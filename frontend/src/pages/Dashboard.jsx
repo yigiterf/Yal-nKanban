@@ -364,10 +364,37 @@ const Dashboard = () => {
         </>
       )}
 
+      {/* ─── DİNAMİK KARŞILAMA VE ÖZET ─── */}
+      <div className="card border-0 shadow-sm p-4 mb-4 mt-2" style={{
+        background: 'linear-gradient(135deg, var(--custom-primary) 0%, var(--custom-secondary) 100%)',
+        color: 'white',
+        borderRadius: '16px'
+      }}>
+        <div className="row align-items-center">
+          <div className="col-md-8">
+            <h3 className="fw-bold mb-1" style={{ color: 'white' }}>Hoş geldin, {user?.username || 'Kullanıcı'}! 🌟</h3>
+            <p className="mb-0 opacity-75 small">
+              Projelerindeki işleri takip etmek ve takımınla işbirliği yapmak için harika bir gün.
+            </p>
+          </div>
+          <div className="col-md-4 text-md-end mt-3 mt-md-0">
+            <div className="bg-white bg-opacity-20 p-3 rounded-3 d-inline-block text-start" style={{ backdropFilter: 'blur(10px)', minWidth: '200px' }}>
+              <span className="small d-block opacity-75">Genel Durum</span>
+              <strong className="fs-4 d-block text-white" style={{ lineHeight: '1.2' }}>
+                {projects.length > 0 ? `${projects.length} Aktif Proje` : 'Yeni Başlangıç'}
+              </strong>
+              <small className="opacity-75">
+                {projects.reduce((sum, p) => sum + (p.task_count || 0), 0)} toplam görev
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ─── İSTATİSTİKLER BÖLÜMÜ ─── */}
-      <div className="row g-3 mb-4 mt-1">
+      <div className="row g-3 mb-4">
         <div className="col-md-4">
-          <div className="card border-0 shadow-sm p-3 bg-white" style={{ borderRadius: '16px' }}>
+          <div className="card border-0 shadow-sm p-3" style={{ borderRadius: '16px' }}>
             <div className="d-flex align-items-center gap-3">
               <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '48px', height: '48px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--custom-primary)', fontSize: '1.5rem' }}>
                 📁
@@ -380,7 +407,7 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card border-0 shadow-sm p-3 bg-white" style={{ borderRadius: '16px' }}>
+          <div className="card border-0 shadow-sm p-3" style={{ borderRadius: '16px' }}>
             <div className="d-flex align-items-center gap-3">
               <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '48px', height: '48px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '1.5rem' }}>
                 📋
@@ -393,7 +420,7 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card border-0 shadow-sm p-3 bg-white" style={{ borderRadius: '16px' }}>
+          <div className="card border-0 shadow-sm p-3" style={{ borderRadius: '16px' }}>
             <div className="d-flex align-items-center gap-3">
               <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '48px', height: '48px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '1.5rem' }}>
                 ⏰
@@ -662,7 +689,6 @@ const Dashboard = () => {
                         width: '160px',
                         height: '240px',
                         borderRadius: '12px',
-                        backgroundColor: '#F8FAFC',
                         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                       }}
                       onMouseEnter={(e) => {
@@ -685,7 +711,7 @@ const Dashboard = () => {
                           {project.emoji || '📁'}
                         </span>
                       </div>
-                      <div className="p-3 d-flex flex-column justify-content-between flex-grow-1 bg-white">
+                      <div className="p-3 d-flex flex-column justify-content-between flex-grow-1 bg-transparent">
                         <h6
                           className="fw-semibold text-truncate mb-0"
                           style={{ color: 'var(--custom-text)', fontSize: '14px' }}
@@ -754,7 +780,7 @@ const Dashboard = () => {
               {filteredProjects.map((project, index) => (
                 <div key={project.id} className="d-flex align-items-center gap-2">
                   <Link to={`/board/${project.id}`} className="text-decoration-none flex-grow-1">
-                    <div className="card border-0 shadow-sm px-4 py-3 bg-white d-flex flex-row align-items-center justify-content-between">
+                    <div className="card border-0 shadow-sm px-4 py-3 d-flex flex-row align-items-center justify-content-between">
                       <div className="d-flex align-items-center gap-3">
                         <div
                           className="rounded d-flex align-items-center justify-content-center"
