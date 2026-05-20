@@ -107,6 +107,11 @@ const deleteProject = async (req, res) => {
 // GET /api/projects/:id/members — Proje üyelerini listele
 const getProjectMembers = async (req, res) => {
   try {
+    const isMember = await ProjectMember.isMember(req.params.id, req.user.id);
+    if (!isMember) {
+      return res.status(403).json({ message: 'Bu projeye erişim yetkiniz yok.' });
+    }
+
     const members = await ProjectMember.findByProject(req.params.id);
     res.json(members);
   } catch (error) {
