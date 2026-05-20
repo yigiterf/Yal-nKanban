@@ -351,6 +351,44 @@ aside .rounded-3:hover {
   transform: translateY(0);
 }
 
+/* MyTasks Timeline View */
+.mytasks-timeline {
+  position: relative;
+}
+
+.timeline-group {
+  position: relative;
+  padding-left: 20px;
+}
+
+.timeline-group::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 22px;
+  bottom: -18px;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0));
+}
+
+.timeline-date-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--custom-primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+  margin-left: -20px;
+  flex: 0 0 auto;
+}
+
+.timeline-group-body {
+  padding-left: 8px;
+}
+
+.timeline-task-card {
+  animation: taskSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* ============================================
    DARK MODE OVERRIDES
    ============================================ */

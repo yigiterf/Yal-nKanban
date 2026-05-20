@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const priorityConfig = {
   low:    { label: 'Düşük',   bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0', order: 0 },
@@ -30,12 +31,26 @@ const getDueDateStatus = (dueDate) => {
 };
 
 const SORT_OPTIONS = [
-  { value: 'default',    label: 'Varsayılan Sıra' },
-  { value: 'due_date',   label: '📅 Son Tarihe Göre' },
-  { value: 'priority',   label: '🚨 Önceliğe Göre' },
-  { value: 'points_asc', label: '⚡ Puana Göre (Artan)' },
-  { value: 'points_desc',label: '⚡ Puana Göre (Azalan)' },
+  { value: 'default',    label: 'Varsayılan' },
+  { value: 'due_date',   label: 'Son Teslim' },
+  { value: 'priority',   label: 'Öncelik' },
+  { value: 'points',     label: 'Story Point' },
+  { value: 'created_at', label: 'Oluşturulma' },
 ];
+
+const toDateKey = (dateValue) => {
+  if (!dateValue) return 'no-date';
+  return new Date(dateValue).toISOString().split('T')[0];
+};
+
+const formatDateLabel = (dateValue) => {
+  if (!dateValue) return 'Tarihsiz';
+  return new Date(dateValue).toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'short',
+    weekday: 'short',
+  });
+};
 
 const MyTasks = () => {
   const [tasks, setTasks]               = useState([]);
@@ -45,9 +60,13 @@ const MyTasks = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [searchQuery, setSearchQuery]   = useState('');
   const [sortBy, setSortBy]             = useState('default');
+  const [sortDirection, setSortDirection] = useState('asc');
+  const [viewMode, setViewMode]         = useState('list');
   const [selectedIds, setSelectedIds]   = useState([]);
   const [bulkStatus, setBulkStatus]     = useState('in_progress');
+  const [bulkDueDate, setBulkDueDate]   = useState('');
   const [bulkLoading, setBulkLoading]   = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [toast, setToast]               = useState(null);
 
   const showToast = (message, type = 'success') => {
@@ -99,6 +118,50 @@ const MyTasks = () => {
     }
   };
 
+  const handleBulkDueDateChange = async () => {
+    if (selectedIds.length === 0 || !bulkDueDate) return;
+    setBulkLoading(true);
+    const oldTasks = [...tasks];
+    const selectedTasks = tasks.filter(t => selectedIds.includes(t.id));
+    setTasks(prev => prev.map(t => selectedIds.includes(t.id) ? { ...t, due_date: bulkDueDate } : t));
+    try {
+      await Promise.all(selectedTasks.map(task => api.patch(`/tasks/${task.id}`, {
+        title: task.title,
+        description: task.description || '',
+        dueDate: bulkDueDate,
+        priority: task.priority || 'medium',
+        tags: task.tags || '',
+        estimatePoints: task.estimate_points ?? null,
+      })));
+      showToast(`${selectedIds.length} göreve son tarih atandı.`);
+      setBulkDueDate('');
+      setSelectedIds([]);
+    } catch (err) {
+      setTasks(oldTasks);
+      showToast(err.response?.data?.message || 'Son tarih atanamadı.', 'danger');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    setBulkLoading(true);
+    const oldTasks = [...tasks];
+    setTasks(prev => prev.filter(t => !selectedIds.includes(t.id)));
+    try {
+      await Promise.all(selectedIds.map(id => api.delete(`/tasks/${id}`)));
+      showToast(`${selectedIds.length} görev silindi.`);
+      setSelectedIds([]);
+    } catch (err) {
+      setTasks(oldTasks);
+      showToast(err.response?.data?.message || 'Toplu silme başarısız.', 'danger');
+    } finally {
+      setConfirmBulkDelete(false);
+      setBulkLoading(false);
+    }
+  };
+
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
@@ -120,31 +183,33 @@ const MyTasks = () => {
       return matchesStatus && matchesPriority && matchesSearch;
     });
 
+    const direction = sortDirection === 'asc' ? 1 : -1;
+
     switch (sortBy) {
       case 'due_date':
         result = result.slice().sort((a, b) => {
           if (!a.due_date && !b.due_date) return 0;
           if (!a.due_date) return 1;
           if (!b.due_date) return -1;
-          return new Date(a.due_date) - new Date(b.due_date);
+          return (new Date(a.due_date) - new Date(b.due_date)) * direction;
         });
         break;
       case 'priority':
         result = result.slice().sort((a, b) =>
-          (priorityConfig[b.priority]?.order ?? 1) - (priorityConfig[a.priority]?.order ?? 1)
+          ((priorityConfig[a.priority]?.order ?? 1) - (priorityConfig[b.priority]?.order ?? 1)) * direction
         );
         break;
-      case 'points_asc':
-        result = result.slice().sort((a, b) => (a.estimate_points ?? 0) - (b.estimate_points ?? 0));
+      case 'points':
+        result = result.slice().sort((a, b) => ((a.estimate_points ?? 0) - (b.estimate_points ?? 0)) * direction);
         break;
-      case 'points_desc':
-        result = result.slice().sort((a, b) => (b.estimate_points ?? 0) - (a.estimate_points ?? 0));
+      case 'created_at':
+        result = result.slice().sort((a, b) => (new Date(a.created_at || 0) - new Date(b.created_at || 0)) * direction);
         break;
       default:
         break;
     }
     return result;
-  }, [tasks, filterStatus, filterPriority, searchQuery, sortBy]);
+  }, [tasks, filterStatus, filterPriority, searchQuery, sortBy, sortDirection]);
 
   // Stat hesaplamaları
   const stats = useMemo(() => ({
@@ -158,6 +223,22 @@ const MyTasks = () => {
   }), [tasks]);
 
   const filteredIds = filteredTasks.map(t => t.id);
+  const timelineGroups = useMemo(() => {
+    const groups = filteredTasks.reduce((acc, task) => {
+      const key = toDateKey(task.due_date);
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(task);
+      return acc;
+    }, {});
+
+    return Object.entries(groups).sort(([a], [b]) => {
+      if (a === 'no-date') return 1;
+      if (b === 'no-date') return -1;
+      return new Date(a) - new Date(b);
+    });
+  }, [filteredTasks]);
 
   if (loading) {
     return (
@@ -194,6 +275,15 @@ const MyTasks = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        show={confirmBulkDelete}
+        title="Seçili Görevleri Sil"
+        message={`${selectedIds.length} görevi kalıcı olarak silmek istediğinize emin misiniz?`}
+        confirmText="Evet, Sil"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setConfirmBulkDelete(false)}
+      />
 
       {/* Header */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 pb-3 border-bottom">
@@ -240,7 +330,7 @@ const MyTasks = () => {
       <div className="card border-0 shadow-sm p-3 mb-3 bg-white" style={{ borderRadius: '12px' }}>
         <div className="row g-2 align-items-center">
           {/* Search */}
-          <div className="col-md-3">
+          <div className="col-md-2">
             <div className="position-relative">
               <input
                 type="text"
@@ -299,8 +389,32 @@ const MyTasks = () => {
             </select>
           </div>
 
+          {/* Direction */}
+          <div className="col-md-1 col-sm-6">
+            <button
+              className="btn btn-sm btn-light border w-100"
+              style={{ borderRadius: '8px', fontSize: '12px', height: '38px' }}
+              onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+              title={sortDirection === 'asc' ? 'Artan' : 'Azalan'}
+            >
+              {sortDirection === 'asc' ? '↑ Artan' : '↓ Azalan'}
+            </button>
+          </div>
+
+          {/* View Mode */}
+          <div className="col-md-1 col-sm-6">
+            <button
+              className="btn btn-sm btn-light border w-100"
+              style={{ borderRadius: '8px', fontSize: '12px', height: '38px' }}
+              onClick={() => setViewMode(prev => prev === 'list' ? 'timeline' : 'list')}
+              title={viewMode === 'list' ? 'Zaman çizelgesi' : 'Liste'}
+            >
+              {viewMode === 'list' ? 'Takvim' : 'Liste'}
+            </button>
+          </div>
+
           {/* Select All / Deselect */}
-          <div className="col-md-3 d-flex align-items-center gap-2 justify-content-md-end">
+          <div className="col-md-2 d-flex align-items-center gap-2 justify-content-md-end">
             <button
               className="btn btn-sm btn-light border"
               style={{ borderRadius: '8px', fontSize: '12px', height: '38px', whiteSpace: 'nowrap' }}
@@ -317,13 +431,13 @@ const MyTasks = () => {
       {/* Toplu İşlem Çubuğu */}
       {selectedIds.length > 0 && (
         <div
-          className="card border-0 shadow-sm p-2 mb-3 d-flex flex-row align-items-center gap-3"
+          className="card border-0 shadow-sm p-2 mb-3 d-flex flex-wrap flex-md-row align-items-center gap-2"
           style={{ borderRadius: '10px', backgroundColor: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99,102,241,0.15)' }}
         >
           <span className="fw-semibold text-primary" style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>
             {selectedIds.length} görev seçildi
           </span>
-          <div className="d-flex align-items-center gap-2 flex-grow-1">
+          <div className="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
             <select
               className="form-select form-select-sm"
               value={bulkStatus}
@@ -342,6 +456,29 @@ const MyTasks = () => {
             >
               {bulkLoading ? 'Güncelleniyor...' : '✔ Uygula'}
             </button>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={bulkDueDate}
+              onChange={e => setBulkDueDate(e.target.value)}
+              style={{ maxWidth: '170px', borderRadius: '8px' }}
+            />
+            <button
+              className="btn btn-sm btn-light border fw-semibold"
+              style={{ borderRadius: '8px' }}
+              onClick={handleBulkDueDateChange}
+              disabled={bulkLoading || !bulkDueDate}
+            >
+              Tarih Ata
+            </button>
+            <button
+              className="btn btn-sm btn-outline-danger fw-semibold"
+              style={{ borderRadius: '8px' }}
+              onClick={() => setConfirmBulkDelete(true)}
+              disabled={bulkLoading}
+            >
+              Sil
+            </button>
           </div>
           <button
             className="btn btn-sm btn-light border ms-auto"
@@ -353,7 +490,107 @@ const MyTasks = () => {
         </div>
       )}
 
-      {/* Tasks List */}
+      {/* Tasks List / Timeline */}
+      {viewMode === 'timeline' ? (
+        <div className="mytasks-timeline d-flex flex-column gap-3">
+          {timelineGroups.map(([dateKey, group]) => (
+            <div key={dateKey} className="timeline-group">
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <div className="timeline-date-dot" />
+                <h6 className="mb-0 fw-bold" style={{ color: 'var(--custom-text)', fontSize: '14px' }}>
+                  {dateKey === 'no-date' ? 'Tarihsiz Görevler' : formatDateLabel(dateKey)}
+                </h6>
+                <span className="badge bg-light text-muted border rounded-pill">{group.length}</span>
+              </div>
+              <div className="timeline-group-body d-flex flex-column gap-2">
+                {group.map(task => {
+                  const pr = priorityConfig[task.priority] || priorityConfig.medium;
+                  const st = statusConfig[task.status] || statusConfig.todo;
+                  const ds = getDueDateStatus(task.due_date);
+                  const isSelected = selectedIds.includes(task.id);
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="card border-0 shadow-sm bg-white task-card-modern timeline-task-card"
+                      style={{
+                        borderRadius: '12px',
+                        borderLeft: `5px solid ${task.project_color || 'var(--custom-primary)'}`,
+                        outline: isSelected ? '2px solid rgba(99,102,241,0.4)' : 'none',
+                      }}
+                    >
+                      <div className="p-3 d-flex flex-column flex-md-row gap-3 align-items-md-center">
+                        <input
+                          type="checkbox"
+                          className="form-check-input mt-0"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(task.id)}
+                          style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--custom-primary)' }}
+                        />
+                        <div className="flex-grow-1">
+                          <div className="d-flex align-items-center gap-2 mb-1">
+                            <span>{task.project_emoji || '📁'}</span>
+                            <Link
+                              to={`/board/${task.project_id}`}
+                              className="fw-semibold small text-decoration-none"
+                              style={{ color: task.project_color || 'var(--custom-primary)' }}
+                            >
+                              {task.project_name}
+                            </Link>
+                          </div>
+                          <h6 className="fw-bold mb-1" style={{ color: 'var(--custom-text)', fontSize: '15px' }}>
+                            {task.title}
+                          </h6>
+                          {task.description && (
+                            <p className="text-muted mb-0 small" style={{ lineHeight: 1.4 }}>
+                              {task.description.length > 90 ? `${task.description.slice(0, 90)}...` : task.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="d-flex flex-wrap align-items-center gap-2 justify-content-md-end">
+                          <span
+                            className="badge rounded-pill fw-medium"
+                            style={{ backgroundColor: st.bg, color: st.color, border: `1px solid ${st.border}`, fontSize: '11px', padding: '5px 10px' }}
+                          >
+                            {st.icon} {st.label}
+                          </span>
+                          <span
+                            className="badge rounded-pill fw-medium"
+                            style={{ backgroundColor: pr.bg, color: pr.color, border: `1px solid ${pr.border}`, fontSize: '11px', padding: '5px 10px' }}
+                          >
+                            {pr.label}
+                          </span>
+                          {task.estimate_points != null && (
+                            <span className="badge rounded-pill bg-light text-dark border fw-semibold" style={{ fontSize: '11px', padding: '5px 10px' }}>
+                              {task.estimate_points} SP
+                            </span>
+                          )}
+                          {ds && (
+                            <span
+                              className="badge rounded-pill"
+                              style={{ backgroundColor: ds.bg, color: ds.color, border: `1px solid ${ds.border}`, fontSize: '11px', padding: '5px 10px' }}
+                            >
+                              {ds.label}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {filteredTasks.length === 0 && (
+            <div className="text-center py-5 bg-white rounded-4 shadow-sm" style={{ border: '1px dashed #e2e8f0' }}>
+              <div style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.3 }}>🎉</div>
+              <h5 className="fw-semibold mb-2" style={{ color: 'var(--custom-text)' }}>Eşleşen Görev Bulunamadı</h5>
+              <p className="text-muted mb-0 small">Farklı filtreler veya arama kriterleri deneyin.</p>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="d-flex flex-column gap-3">
         {filteredTasks.map(task => {
           const pr = priorityConfig[task.priority] || priorityConfig.medium;
@@ -513,6 +750,7 @@ const MyTasks = () => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };

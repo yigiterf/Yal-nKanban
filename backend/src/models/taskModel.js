@@ -75,7 +75,7 @@ const Task = {
   findUpcomingByUser: async (userId) => {
     const [rows] = await pool.execute(
       `SELECT 
-        t.id, t.title, t.description, t.status, t.due_date, t.project_id,
+        t.id, t.title, t.description, t.status, t.due_date, t.created_at, t.project_id,
         t.priority, t.tags, t.estimate_points,
         p.name AS project_name,
         u.username AS assigned_username
@@ -97,7 +97,7 @@ const Task = {
   findAllAssignedByUser: async (userId) => {
     const [rows] = await pool.execute(
       `SELECT 
-        t.id, t.title, t.description, t.status, t.due_date, t.project_id,
+        t.id, t.title, t.description, t.status, t.due_date, t.created_at, t.project_id,
         t.priority, t.tags, t.estimate_points,
         p.name AS project_name, p.color AS project_color, p.emoji AS project_emoji,
         u.username AS assigned_username
