@@ -1,0 +1,63 @@
+services:
+  db:
+    image: mysql:8.0
+    # MySQL 8.0 için güncel kimlik doğrulama ayarı
+    command: --authentication-policy=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: yalinkamban
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db:/docker-entrypoint-initdb.d
+    # Veritabanının sadece çalışmasını değil, "hazır" olmasını kontrol eder
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uappuser", "-papppassword" ]
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/src:/usr/src/app/src
+      - ./backend/index.js:/usr/src/app/index.js
+      # node_modules container'da kalır, host'tan override edilmez
+    environment:
+      - PORT=5000
+      - DB_HOST=db
+      - DB_USER=appuser
+      - DB_PASSWORD=apppassword
+      - DB_NAME=yalinkamban
+      - JWT_SECRET=supersecret123
+    depends_on:
+      db:
+        condition: service_healthy
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/usr/src/app/src
+      - ./frontend/index.html:/usr/src/app/index.html
+      - ./frontend/vite.config.js:/usr/src/app/vite.config.js
+      # node_modules container'da kalır, host'tan override edilmez
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  db_data:

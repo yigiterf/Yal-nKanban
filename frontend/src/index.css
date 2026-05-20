@@ -1,0 +1,238 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Pastel Palette Options */
+  --custom-bg: #F1F5F9;
+  --custom-primary: #6366F1;
+  --custom-secondary: #A5B4FC;
+  --custom-accent: #FCA5A5;
+  --custom-text: #334155;
+
+  /* Bootstrap Variable Overrides (Targeting standard bootstrap colors) */
+  --bs-body-bg: var(--custom-bg);
+  --bs-body-color: var(--custom-text);
+  --bs-primary: var(--custom-primary);
+  --bs-secondary: var(--custom-secondary);
+  --bs-danger: var(--custom-accent);
+  
+  /* Modern Font Family */
+  --bs-body-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --bs-heading-color: var(--custom-text);
+}
+
+body {
+  margin: 0;
+  font-family: var(--bs-body-font-family);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Glassmorphism / Modernized Cards */
+.card {
+  border: none !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Modernizing Buttons */
+.btn {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 0.6rem 1.2rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.btn-primary {
+  background-color: var(--custom-primary) !important;
+  border-color: var(--custom-primary) !important;
+  /* Slight gradient touch for modern feel */
+  background: linear-gradient(135deg, var(--custom-primary) 0%, #818cf8 100%) !important;
+  color: white !important;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background: linear-gradient(135deg, #4f46e5 0%, var(--custom-primary) 100%) !important;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4) !important;
+}
+
+/* Form Controls */
+.form-control {
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 0.75rem 1rem !important;
+  transition: all 0.2s ease !important;
+  background-color: #ffffff !important;
+  color: var(--custom-text) !important;
+}
+
+.form-control:focus {
+  border-color: var(--custom-primary) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+/* Links and Accents */
+a {
+  color: var(--custom-primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: #4f46e5;
+}
+
+.text-decoration-none {
+  text-decoration: none !important;
+}
+
+/* Accent Utility (if we use it) */
+.text-accent {
+  color: var(--custom-accent);
+}
+
+/* ============================================
+   KANBAN & UX Polish Styles
+   ============================================ */
+
+/* Drag & Drop Visual Feedback */
+[draggable="true"] {
+  cursor: grab;
+}
+
+[draggable="true"]:active {
+  cursor: grabbing;
+  opacity: 0.7;
+  transform: rotate(2deg) scale(1.02);
+  transition: transform 0.1s ease;
+}
+
+/* Kanban column drop highlight */
+.kanban-drop-active {
+  background-color: rgba(99, 102, 241, 0.05) !important;
+  border-color: var(--custom-primary) !important;
+  border-style: dashed !important;
+}
+
+/* Toast Enter Animation */
+.alert.fade.show {
+  animation: toastSlideIn 0.3s ease-out;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Modal Enter Animation */
+.modal.d-block .modal-dialog {
+  animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Smooth scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Sidebar link hover effect */
+aside .rounded-3:hover {
+  background-color: #f1f5f9 !important;
+  transition: background-color 0.2s ease;
+}
+
+/* Select (dropdown) styling to match form controls */
+.form-select {
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 0.75rem 1rem !important;
+  transition: all 0.2s ease !important;
+  background-color: #ffffff !important;
+  color: var(--custom-text) !important;
+}
+
+.form-select:focus {
+  border-color: var(--custom-primary) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+}
+
+/* Badge hover effect for member tags */
+.badge {
+  transition: all 0.15s ease;
+}
+
+/* Responsive: sidebar collapse on small screens */
+@media (max-width: 768px) {
+  aside {
+    width: 64px !important;
+    overflow: hidden;
+  }
+  aside span:not(:first-child),
+  aside p,
+  aside .fw-bold.fs-5 {
+    display: none;
+  }
+}
+
+/* Skeleton Loading Animation */
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeletonLoading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
