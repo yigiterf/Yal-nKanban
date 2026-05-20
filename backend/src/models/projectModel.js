@@ -14,7 +14,8 @@ const Project = {
   findAllByUser: async (userId) => {
     const [rows] = await pool.execute(
       `SELECT p.*, pm.role,
-              (SELECT COUNT(*) FROM Tasks t WHERE t.project_id = p.id) AS task_count
+              (SELECT COUNT(*) FROM Tasks t WHERE t.project_id = p.id) AS task_count,
+              (SELECT COUNT(*) FROM Tasks t WHERE t.project_id = p.id AND t.status = 'done') AS completed_task_count
        FROM Projects p
        INNER JOIN ProjectMembers pm ON p.id = pm.project_id
        WHERE pm.user_id = ?

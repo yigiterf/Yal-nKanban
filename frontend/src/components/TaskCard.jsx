@@ -28,7 +28,7 @@ const getDueDateStatus = (dueDate) => {
   return { label: `${diffDays}g kaldı`, color: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0', icon: '🟢' };
 };
 
-const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
+const TaskCard = ({ task, onStatusChange, onEdit, onDelete, isPulsing }) => {
   const cfg = statusConfig[task.status] || statusConfig.todo;
   const dueDateStatus = getDueDateStatus(task.due_date);
   const prCfg = priorityConfig[task.priority] || priorityConfig.medium;
@@ -36,26 +36,24 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete }) => {
 
   return (
     <div
-      className="card mb-2 border-0 shadow-sm"
+      className={`card mb-2 border-0 shadow-sm task-card-modern task-card-enter ${isPulsing ? 'done-pulse-highlight' : ''}`}
       style={{
         borderRadius: '12px',
         borderLeft: `4px solid ${cfg.color}`,
         cursor: 'grab',
-        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
       }}
     >
       <div className="card-body p-3">
         <div className="d-flex justify-content-between align-items-start mb-2">
-          <h6 className="fw-semibold mb-0" style={{ color: 'var(--custom-text)', fontSize: '14px', flex: 1, marginRight: '8px' }}>
-            {task.title}
+          <h6 className="fw-semibold mb-0 d-flex align-items-center gap-1 text-wrap" style={{ color: 'var(--custom-text)', fontSize: '14px', flex: 1, marginRight: '8px' }}>
+            {task.status === 'done' && (
+              <span className="text-success checkmark-pop me-1" style={{ fontSize: '15px', fontWeight: 'bold' }}>
+                ✓
+              </span>
+            )}
+            <span style={{ textDecoration: task.status === 'done' ? 'line-through' : 'none', opacity: task.status === 'done' ? 0.6 : 1 }}>
+              {task.title}
+            </span>
           </h6>
           {/* Aksiyon butonları */}
           <div className="dropdown">

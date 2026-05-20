@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import TaskCard from './TaskCard';
 
 const columns = [
@@ -8,19 +8,48 @@ const columns = [
 ];
 
 const KanbanBoard = ({ tasks, onStatusChange, onEditTask, onDeleteTask }) => {
+  const [draggedOverColumn, setDraggedOverColumn] = useState(null);
+  const [draggingTaskId, setDraggingTaskId] = useState(null);
+  const [pulsingTaskId, setPulsingTaskId] = useState(null);
+
   return (
     <div className="row g-4">
       {columns.map((col) => {
         const columnTasks = tasks.filter((t) => t.status === col.key);
+        const isOver = draggedOverColumn === col.key;
 
         return (
           <div className="col-md-4" key={col.key}>
             <div
-              className="rounded-3 p-3 h-100"
+              className={`rounded-4 p-3 h-100 transition-all ${isOver ? 'kanban-drop-active' : ''}`}
               style={{
-                backgroundColor: '#f8fafc',
-                border: '1px dashed #e2e8f0',
-                minHeight: '300px',
+                backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.4))',
+                border: isOver ? '1px dashed var(--custom-primary)' : '1px solid rgba(0,0,0,0.03)',
+                minHeight: '400px',
+                backdropFilter: 'blur(10px)',
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                setDraggedOverColumn(col.key);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+              }}
+              onDragLeave={() => {
+                setDraggedOverColumn(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDraggedOverColumn(null);
+                const taskIdStr = e.dataTransfer.getData('taskId');
+                if (taskIdStr) {
+                  const taskId = parseInt(taskIdStr);
+                  onStatusChange(taskId, col.key);
+                  if (col.key === 'done') {
+                    setPulsingTaskId(taskId);
+                    setTimeout(() => setPulsingTaskId(null), 1000);
+                  }
+                }
               }}
             >
               {/* Kolon Başlığı */}
@@ -46,36 +75,34 @@ const KanbanBoard = ({ tasks, onStatusChange, onEditTask, onDeleteTask }) => {
               {/* Görev Kartları */}
               <div
                 className="d-flex flex-column gap-2"
-                style={{ minHeight: '200px' }}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const taskId = e.dataTransfer.getData('taskId');
-                  if (taskId) {
-                    onStatusChange(parseInt(taskId), col.key);
-                  }
-                }}
+                style={{ minHeight: '300px' }}
               >
                 {columnTasks.map((task) => (
                   <div
                     key={task.id}
                     draggable
                     onDragStart={(e) => {
+                      setDraggingTaskId(task.id);
                       e.dataTransfer.setData('taskId', task.id.toString());
                     }}
+                    onDragEnd={() => {
+                      setDraggingTaskId(null);
+                    }}
+                    className={draggingTaskId === task.id ? 'task-dragging' : ''}
                   >
                     <TaskCard
                       task={task}
                       onStatusChange={onStatusChange}
                       onEdit={onEditTask}
                       onDelete={onDeleteTask}
+                      isPulsing={pulsingTaskId === task.id}
                     />
                   </div>
                 ))}
 
                 {columnTasks.length === 0 && (
-                  <div className="text-center text-muted py-4" style={{ fontSize: '13px' }}>
-                    <div style={{ fontSize: '28px', marginBottom: '8px', opacity: 0.4 }}>
+                  <div className="text-center text-muted py-5" style={{ fontSize: '13px' }}>
+                    <div style={{ fontSize: '28px', marginBottom: '8px', opacity: 0.3 }}>
                       {col.icon}
                     </div>
                     Bu kolonda görev yok

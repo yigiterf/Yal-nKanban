@@ -115,20 +115,25 @@ a:hover {
 /* Drag & Drop Visual Feedback */
 [draggable="true"] {
   cursor: grab;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
 }
 
 [draggable="true"]:active {
   cursor: grabbing;
-  opacity: 0.7;
-  transform: rotate(2deg) scale(1.02);
-  transition: transform 0.1s ease;
+}
+
+/* Sürüklenen Kart Sınıfı */
+.task-dragging {
+  opacity: 0.4 !important;
+  transform: scale(0.96) rotate(-1deg) !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Kanban column drop highlight */
 .kanban-drop-active {
-  background-color: rgba(99, 102, 241, 0.05) !important;
-  border-color: var(--custom-primary) !important;
-  border-style: dashed !important;
+  background-color: rgba(99, 102, 241, 0.06) !important;
+  border: 1px dashed var(--custom-primary) !important;
+  box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.05) !important;
 }
 
 /* Toast Enter Animation */
@@ -149,13 +154,13 @@ a:hover {
 
 /* Modal Enter Animation */
 .modal.d-block .modal-dialog {
-  animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes modalPop {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(20px);
+    transform: scale(0.95) translateY(15px);
   }
   to {
     opacity: 1;
@@ -166,6 +171,7 @@ a:hover {
 /* Smooth scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -235,6 +241,114 @@ aside .rounded-3:hover {
   100% {
     background-position: -200% 0;
   }
+}
+
+/* ============================================
+   PREMIUM CUSTOM ANIMATIONS & CLASSES
+   ============================================ */
+
+/* Yeni Kart Eklenme Animasyonu */
+.task-card-enter {
+  animation: taskSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes taskSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Kart Hover Efekti (Standardize) */
+.task-card-modern {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease !important;
+}
+
+.task-card-modern:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06) !important;
+  border-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Başarı Pulse Efekti */
+.done-pulse-highlight {
+  animation: donePulse 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes donePulse {
+  0% {
+    box-shadow: 0 0 0 0px rgba(34, 197, 94, 0.6);
+    background-color: rgba(34, 197, 94, 0.15) !important;
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(34, 197, 94, 0);
+  }
+}
+
+/* Checkmark Tick Çizim Animasyonu */
+.checkmark-pop {
+  animation: checkPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Dikey CSS Sütun Grafiği Stilleri */
+.chart-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-grow: 1;
+  position: relative;
+}
+
+.chart-bar {
+  width: 16px;
+  border-radius: 8px 8px 0 0;
+  transition: height 0.8s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
+  position: relative;
+  cursor: pointer;
+}
+
+.chart-bar:hover {
+  filter: brightness(0.95);
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: -38px;
+  background: #1e293b;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateY(4px);
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  z-index: 10;
+}
+
+.chart-bar-container:hover .chart-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ============================================

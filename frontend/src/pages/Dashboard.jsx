@@ -55,21 +55,33 @@ const Dashboard = () => {
   // Toast state
   const [toast, setToast] = useState(null);
 
+  // Hızlı Görev Oluşturma ve Dashboard İstatistikleri State
+  const [stats, setStats] = useState(null);
+  const [quickProjectId, setQuickProjectId] = useState('');
+  const [quickTaskTitle, setQuickTaskTitle] = useState('');
+  const [quickPriority, setQuickPriority] = useState('medium');
+  const [quickPoints, setQuickPoints] = useState('');
+  const [quickDueDate, setQuickDueDate] = useState('');
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  // API'den projeleri ve yaklaşan görevleri çek
+  // API'den projeleri ve dashboard istatistiklerini çek
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [projectsRes, upcomingRes] = await Promise.all([
+      const [projectsRes, statsRes] = await Promise.all([
         api.get('/projects'),
-        api.get('/tasks/upcoming'),
+        api.get('/dashboard/stats'),
       ]);
       setProjects(projectsRes.data);
-      setUpcomingTasks(upcomingRes.data);
+      setStats(statsRes.data);
+      setUpcomingTasks(statsRes.data.criticalTasks || []);
+      if (projectsRes.data.length > 0) {
+        setQuickProjectId(projectsRes.data[0].id.toString());
+      }
     } catch (err) {
       setError('Veriler yüklenirken hata oluştu.');
       console.error(err);
@@ -199,6 +211,41 @@ const Dashboard = () => {
     } catch (err) {
       setProjects(oldProjects);
       showToast(err.response?.data?.message || 'Proje silinemedi.', 'danger');
+    }
+  };
+
+  // Hızlı Görev Oluştur
+  const handleQuickCreateTask = async (e) => {
+    e.preventDefault();
+    if (!quickProjectId) {
+      showToast('Lütfen önce bir proje seçin veya oluşturun.', 'danger');
+      return;
+    }
+    if (!quickTaskTitle.trim()) {
+      showToast('Görev başlığı boş bırakılamaz.', 'danger');
+      return;
+    }
+
+    try {
+      await api.post(`/projects/${quickProjectId}/tasks`, {
+        title: quickTaskTitle.trim(),
+        priority: quickPriority,
+        estimatePoints: quickPoints ? parseInt(quickPoints) : null,
+        dueDate: quickDueDate || null,
+        description: '',
+        tags: '',
+        assignedTo: null,
+      });
+
+      setQuickTaskTitle('');
+      setQuickPoints('');
+      setQuickDueDate('');
+      showToast('Görev başarıyla oluşturuldu!');
+      
+      // Dashboard verilerini yenile
+      fetchData();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Görev oluşturulamadı.', 'danger');
     }
   };
 
@@ -400,7 +447,7 @@ const Dashboard = () => {
                 📁
               </div>
               <div>
-                <h6 className="text-muted small mb-1 fw-medium">Toplam Proje</h6>
+                <h6 className="text-muted small mb-1 fw-medium">Aktif Projelerim</h6>
                 <h4 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>{projects.length}</h4>
               </div>
             </div>
@@ -413,8 +460,13 @@ const Dashboard = () => {
                 📋
               </div>
               <div>
-                <h6 className="text-muted small mb-1 fw-medium">Toplam Görev</h6>
-                <h4 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>{projects.reduce((sum, p) => sum + (p.task_count || 0), 0)}</h4>
+                <h6 className="text-muted small mb-1 fw-medium">Bana Atanan Görevler</h6>
+                <h4 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>
+                  {stats ? (stats.taskStats.todo + stats.taskStats.in_progress + stats.taskStats.done) : 0}
+                  <span className="text-muted fw-normal" style={{ fontSize: '13px' }}>
+                    &nbsp;({stats?.taskStats.done || 0} bitti)
+                  </span>
+                </h4>
               </div>
             </div>
           </div>
@@ -423,13 +475,163 @@ const Dashboard = () => {
           <div className="card border-0 shadow-sm p-3" style={{ borderRadius: '16px' }}>
             <div className="d-flex align-items-center gap-3">
               <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '48px', height: '48px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '1.5rem' }}>
-                ⏰
+                ⚡
               </div>
               <div>
-                <h6 className="text-muted small mb-1 fw-medium">Yaklaşan Görevler</h6>
-                <h4 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>{upcomingTasks.length}</h4>
+                <h6 className="text-muted small mb-1 fw-medium">Story Points Performansı</h6>
+                <h4 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>
+                  {stats?.points.completed || 0} / {stats?.points.total || 0} SP
+                </h4>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── DİNAMİK GRAFİK VE HIZLI GÖREV BÖLÜMÜ ─── */}
+      <div className="row g-4 mb-4">
+        <div className="col-lg-8">
+          <div className="card border-0 shadow-sm p-4 h-100" style={{ borderRadius: '16px', minHeight: '380px' }}>
+            <h5 className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ color: 'var(--custom-text)', fontSize: '16px' }}>
+              📊 Haftalık Performans Grafiği
+            </h5>
+            <p className="text-muted small mb-4">Son 7 günde oluşturulan ve sizin tarafınızdan tamamlanan görevler.</p>
+            
+            <div className="d-flex align-items-end justify-content-between px-2 mt-4" style={{ height: '180px', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
+              {stats?.weeklyActivity.map((day, idx) => {
+                const maxCount = Math.max(...stats.weeklyActivity.map(w => Math.max(w.created, w.completed, 1)));
+                const createdHeight = (day.created / maxCount) * 100;
+                const completedHeight = (day.completed / maxCount) * 100;
+                return (
+                  <div key={idx} className="d-flex flex-row gap-1 align-items-end h-100 chart-bar-container" style={{ width: '12%' }}>
+                    {/* Tooltip */}
+                    <div className="chart-tooltip">
+                      🆕 {day.created} Yeni | ✅ {day.completed} Biten
+                    </div>
+                    {/* Created Bar */}
+                    <div 
+                      className="chart-bar" 
+                      style={{ 
+                        height: `${Math.max(createdHeight, 4)}%`, 
+                        backgroundColor: 'var(--custom-primary)', 
+                        opacity: day.created === 0 ? 0.15 : 1 
+                      }} 
+                    />
+                    {/* Completed Bar */}
+                    <div 
+                      className="chart-bar" 
+                      style={{ 
+                        height: `${Math.max(completedHeight, 4)}%`, 
+                        backgroundColor: '#22c55e', 
+                        opacity: day.completed === 0 ? 0.15 : 1 
+                      }} 
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Gün İsimleri */}
+            <div className="d-flex justify-content-between px-2 mt-2">
+              {stats?.weeklyActivity.map((day, idx) => (
+                <div key={idx} className="text-center text-muted fw-semibold" style={{ width: '12%', fontSize: '11px' }}>
+                  {day.dayName}
+                </div>
+              ))}
+            </div>
+            
+            {/* Göstergeler */}
+            <div className="d-flex gap-3 justify-content-center mt-3" style={{ fontSize: '11px' }}>
+              <div className="d-flex align-items-center gap-1">
+                <span className="rounded-circle d-inline-block" style={{ width: '8px', height: '8px', backgroundColor: 'var(--custom-primary)' }} />
+                <span className="text-muted">Dahil Olduğum Projelerde Oluşturulan</span>
+              </div>
+              <div className="d-flex align-items-center gap-1">
+                <span className="rounded-circle d-inline-block" style={{ width: '8px', height: '8px', backgroundColor: '#22c55e' }} />
+                <span className="text-muted">Benim Tamamladıklarım</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-lg-4">
+          <div className="card border-0 shadow-sm p-4 h-100" style={{ borderRadius: '16px', minHeight: '380px' }}>
+            <h5 className="fw-bold mb-1" style={{ color: 'var(--custom-text)', fontSize: '16px' }}>
+              ⚡ Hızlı Görev Oluşturucu
+            </h5>
+            <p className="text-muted small mb-3">İlgili projeye gitmeden direkt buradan yeni görev atayın.</p>
+            
+            <form onSubmit={handleQuickCreateTask}>
+              <div className="mb-2">
+                <label className="form-label small mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>Proje</label>
+                <select 
+                  className="form-select form-select-sm" 
+                  value={quickProjectId} 
+                  onChange={(e) => setQuickProjectId(e.target.value)}
+                  style={{ fontSize: '12px', padding: '6px 10px' }}
+                >
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
+                  ))}
+                  {projects.length === 0 && <option value="">Önce Proje Oluşturun</option>}
+                </select>
+              </div>
+              
+              <div className="mb-2">
+                <label className="form-label small mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>Görev Başlığı</label>
+                <input 
+                  type="text" 
+                  className="form-control form-control-sm" 
+                  placeholder="Yapılacak iş..." 
+                  value={quickTaskTitle}
+                  onChange={(e) => setQuickTaskTitle(e.target.value)}
+                  style={{ fontSize: '12px', padding: '6px 10px' }}
+                />
+              </div>
+              
+              <div className="row g-2 mb-2">
+                <div className="col-6">
+                  <label className="form-label small mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>Öncelik</label>
+                  <select 
+                    className="form-select form-select-sm" 
+                    value={quickPriority} 
+                    onChange={(e) => setQuickPriority(e.target.value)}
+                    style={{ fontSize: '12px', padding: '6px 10px' }}
+                  >
+                    <option value="low">⬇️ Düşük</option>
+                    <option value="medium">➡️ Orta</option>
+                    <option value="high">⬆️ Yüksek</option>
+                    <option value="urgent">🔴 Acil</option>
+                  </select>
+                </div>
+                <div className="col-6">
+                  <label className="form-label small mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>Tahmin (SP)</label>
+                  <input 
+                    type="number" 
+                    className="form-control form-control-sm" 
+                    placeholder="Örn: 5" 
+                    value={quickPoints}
+                    onChange={(e) => setQuickPoints(e.target.value)}
+                    style={{ fontSize: '12px', padding: '6px 10px' }}
+                  />
+                </div>
+              </div>
+              
+              <div className="mb-3">
+                <label className="form-label small mb-1" style={{ fontSize: '11px', fontWeight: 600 }}>Son Tarih</label>
+                <input 
+                  type="date" 
+                  className="form-control form-control-sm" 
+                  value={quickDueDate}
+                  onChange={(e) => setQuickDueDate(e.target.value)}
+                  style={{ fontSize: '12px', padding: '6px 10px' }}
+                />
+              </div>
+              
+              <button type="submit" className="btn btn-primary btn-sm w-100 fw-semibold py-2">
+                Görev Ekle
+              </button>
+            </form>
           </div>
         </div>
       </div>
@@ -680,57 +882,70 @@ const Dashboard = () => {
         <div className="mt-4">
           {viewMode === 'grid' ? (
             <div className="d-flex flex-wrap gap-4">
-              {filteredProjects.map((project, index) => (
-                <div key={project.id} className="position-relative">
-                  <Link to={`/board/${project.id}`} className="text-decoration-none">
-                    <div
-                      className="card border-0 shadow-sm overflow-hidden"
-                      style={{
-                        width: '160px',
-                        height: '240px',
-                        borderRadius: '12px',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)';
-                        e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
-                      }}
-                    >
+              {filteredProjects.map((project, index) => {
+                const percent = project.task_count > 0 
+                  ? Math.round(((project.completed_task_count || 0) / project.task_count) * 100) 
+                  : 0;
+                return (
+                  <div key={project.id} className="position-relative">
+                    <Link to={`/board/${project.id}`} className="text-decoration-none">
                       <div
-                        className="w-100 d-flex align-items-center justify-content-center"
+                        className="card border-0 shadow-sm overflow-hidden task-card-modern"
                         style={{
-                          height: '70%',
-                          background: `linear-gradient(135deg, ${(project.color || '#6366F1')}80, ${project.color || '#6366F1'})`,
+                          width: '180px',
+                          height: '260px',
+                          borderRadius: '12px',
                         }}
                       >
-                        <span style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.8)' }}>
-                          {project.emoji || '📁'}
-                        </span>
-                      </div>
-                      <div className="p-3 d-flex flex-column justify-content-between flex-grow-1 bg-transparent">
-                        <h6
-                          className="fw-semibold text-truncate mb-0"
-                          style={{ color: 'var(--custom-text)', fontSize: '14px' }}
+                        <div
+                          className="w-100 d-flex align-items-center justify-content-center"
+                          style={{
+                            height: '45%',
+                            background: `linear-gradient(135deg, ${(project.color || '#6366F1')}80, ${project.color || '#6366F1'})`,
+                          }}
                         >
-                          {project.name}
-                        </h6>
-                        <div className="d-flex align-items-center gap-2 mt-1">
-                          <small className="text-muted" style={{ fontSize: '11px' }}>
-                            {project.role === 'owner' ? '👑 Sahip' : '👤 Üye'}
-                          </small>
-                          {project.task_count > 0 && (
-                            <span className="badge bg-light text-muted border" style={{ fontSize: '10px' }}>
-                              {project.task_count} görev
-                            </span>
-                          )}
+                          <span style={{ fontSize: '2.5rem', color: 'rgba(255,255,255,0.9)' }}>
+                            {project.emoji || '📁'}
+                          </span>
+                        </div>
+                        <div className="p-3 d-flex flex-column justify-content-between flex-grow-1 bg-transparent" style={{ height: '55%' }}>
+                          <div>
+                            <h6
+                              className="fw-semibold text-truncate mb-0"
+                              style={{ color: 'var(--custom-text)', fontSize: '14px' }}
+                              title={project.name}
+                            >
+                              {project.name}
+                            </h6>
+                            <small className="text-muted" style={{ fontSize: '11px' }}>
+                              {project.role === 'owner' ? '👑 Sahip' : '👤 Üye'}
+                            </small>
+                          </div>
+                          
+                          <div className="mt-2">
+                            <div className="d-flex justify-content-between align-items-center mb-1" style={{ fontSize: '10px' }}>
+                              <span className="text-muted">{project.task_count} görev</span>
+                              <span className="fw-semibold text-primary">{percent}%</span>
+                            </div>
+                            <div className="progress" style={{ height: '4px', borderRadius: '2px', backgroundColor: '#f1f5f9' }}>
+                              <div
+                                className="progress-bar"
+                                role="progressbar"
+                                style={{ 
+                                  width: `${percent}%`, 
+                                  borderRadius: '2px', 
+                                  backgroundColor: project.color || 'var(--custom-primary)',
+                                  transition: 'width 0.4s ease' 
+                                }}
+                                aria-valuenow={percent}
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
                   {/* Aksiyon butonları — sadece sahip görebilir */}
                   {project.role === 'owner' && (
                     <div className="position-absolute d-flex gap-1" style={{ top: 8, right: 8 }}>
