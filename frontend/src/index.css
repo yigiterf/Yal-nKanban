@@ -389,6 +389,107 @@ aside .rounded-3:hover {
   animation: taskSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* MyTasks Filter Bar */
+.mytasks-filter-card {
+  overflow: visible;
+}
+
+.mytasks-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.mytasks-filter-field {
+  flex: 1 1 156px;
+  min-width: 156px;
+  max-width: 220px;
+}
+
+.mytasks-search-field {
+  flex: 1.4 1 220px;
+  min-width: min(100%, 220px);
+  max-width: 340px;
+}
+
+.mytasks-filter-action {
+  flex: 0 1 118px;
+  min-width: 112px;
+}
+
+.mytasks-select-action {
+  flex-basis: 138px;
+  margin-left: auto;
+}
+
+.mytasks-filter-control,
+.mytasks-filter-button {
+  width: 100%;
+  height: 40px !important;
+  min-height: 40px;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap;
+}
+
+.mytasks-filter-control {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 12px !important;
+  padding-right: 34px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mytasks-search-input {
+  padding-right: 36px !important;
+}
+
+.mytasks-filter-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mytasks-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+@media (max-width: 992px) {
+  .mytasks-filter-field,
+  .mytasks-search-field,
+  .mytasks-filter-action,
+  .mytasks-select-action {
+    flex: 1 1 calc(50% - 10px);
+    min-width: min(100%, 180px);
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .mytasks-filter-field,
+  .mytasks-search-field,
+  .mytasks-filter-action,
+  .mytasks-select-action {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+}
+
 /* ============================================
    DARK MODE OVERRIDES
    ============================================ */

@@ -327,30 +327,28 @@ const MyTasks = () => {
       </div>
 
       {/* Filters & Sort Bar */}
-      <div className="card border-0 shadow-sm p-3 mb-3 bg-white" style={{ borderRadius: '12px' }}>
-        <div className="row g-2 align-items-center">
+      <div className="card border-0 shadow-sm p-3 mb-3 bg-white mytasks-filter-card" style={{ borderRadius: '12px' }}>
+        <div className="mytasks-filter-bar">
           {/* Search */}
-          <div className="col-md-2">
-            <div className="position-relative">
+          <div className="mytasks-filter-field mytasks-search-field">
+            <div className="position-relative w-100">
               <input
                 type="text"
-                className="form-control form-control-sm rounded-3 shadow-none ps-3 pe-5"
+                className="form-control form-control-sm rounded-3 shadow-none mytasks-filter-control mytasks-search-input"
                 placeholder="Görev veya proje ara..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ border: '1px solid #e2e8f0', height: '38px' }}
               />
-              <span className="position-absolute" style={{ right: 10, top: 9, color: '#94a3b8', fontSize: '13px' }}>🔍</span>
+              <span className="mytasks-search-icon">🔍</span>
             </div>
           </div>
 
           {/* Status Filter */}
-          <div className="col-md-2 col-sm-6">
+          <div className="mytasks-filter-field">
             <select
-              className="form-select form-select-sm rounded-3"
+              className="form-select form-select-sm rounded-3 mytasks-filter-control"
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
-              style={{ height: '38px' }}
             >
               <option value="all">Tüm Durumlar</option>
               <option value="todo">Yapılacak</option>
@@ -360,12 +358,11 @@ const MyTasks = () => {
           </div>
 
           {/* Priority Filter */}
-          <div className="col-md-2 col-sm-6">
+          <div className="mytasks-filter-field">
             <select
-              className="form-select form-select-sm rounded-3"
+              className="form-select form-select-sm rounded-3 mytasks-filter-control"
               value={filterPriority}
               onChange={e => setFilterPriority(e.target.value)}
-              style={{ height: '38px' }}
             >
               <option value="all">Tüm Öncelikler</option>
               <option value="low">Düşük</option>
@@ -376,12 +373,11 @@ const MyTasks = () => {
           </div>
 
           {/* Sort */}
-          <div className="col-md-2">
+          <div className="mytasks-filter-field">
             <select
-              className="form-select form-select-sm rounded-3"
+              className="form-select form-select-sm rounded-3 mytasks-filter-control"
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
-              style={{ height: '38px' }}
             >
               {SORT_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -390,10 +386,9 @@ const MyTasks = () => {
           </div>
 
           {/* Direction */}
-          <div className="col-md-1 col-sm-6">
+          <div className="mytasks-filter-action">
             <button
-              className="btn btn-sm btn-light border w-100"
-              style={{ borderRadius: '8px', fontSize: '12px', height: '38px' }}
+              className="btn btn-sm btn-light border w-100 mytasks-filter-button"
               onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
               title={sortDirection === 'asc' ? 'Artan' : 'Azalan'}
             >
@@ -402,10 +397,9 @@ const MyTasks = () => {
           </div>
 
           {/* View Mode */}
-          <div className="col-md-1 col-sm-6">
+          <div className="mytasks-filter-action">
             <button
-              className="btn btn-sm btn-light border w-100"
-              style={{ borderRadius: '8px', fontSize: '12px', height: '38px' }}
+              className="btn btn-sm btn-light border w-100 mytasks-filter-button"
               onClick={() => setViewMode(prev => prev === 'list' ? 'timeline' : 'list')}
               title={viewMode === 'list' ? 'Zaman çizelgesi' : 'Liste'}
             >
@@ -414,10 +408,9 @@ const MyTasks = () => {
           </div>
 
           {/* Select All / Deselect */}
-          <div className="col-md-2 d-flex align-items-center gap-2 justify-content-md-end">
+          <div className="mytasks-filter-action mytasks-select-action">
             <button
-              className="btn btn-sm btn-light border"
-              style={{ borderRadius: '8px', fontSize: '12px', height: '38px', whiteSpace: 'nowrap' }}
+              className="btn btn-sm btn-light border w-100 mytasks-filter-button"
               onClick={() => toggleSelectAll(filteredIds)}
             >
               {filteredIds.every(id => selectedIds.includes(id)) && filteredIds.length > 0
