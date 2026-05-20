@@ -22,11 +22,54 @@ app.use('/api/tasks', taskRoutes);
 const projectTaskRoutes = require('./src/routes/taskRoutes');
 app.use('/api/projects/:projectId/tasks', projectTaskRoutes);
 
-// Test veritabanı bağlantısı
+// Test veritabanı bağlantısı ve otomatik migrasyonlar
+const runMigrations = async (connection) => {
+  console.log('Veritabanı migrasyonları kontrol ediliyor...');
+  
+  // Projects tablosu için yeni kolonlar
+  try {
+    await connection.query("ALTER TABLE Projects ADD COLUMN color VARCHAR(50) DEFAULT '#6366F1'");
+    console.log('Projelere color kolonu eklendi.');
+  } catch (err) {
+    if (err.errno !== 1060) console.error('Projects color migrasyon hatası:', err);
+  }
+
+  try {
+    await connection.query("ALTER TABLE Projects ADD COLUMN emoji VARCHAR(50) DEFAULT '📁'");
+    console.log('Projelere emoji kolonu eklendi.');
+  } catch (err) {
+    if (err.errno !== 1060) console.error('Projects emoji migrasyon hatası:', err);
+  }
+
+  // Tasks tablosu için yeni kolonlar
+  try {
+    await connection.query("ALTER TABLE Tasks ADD COLUMN priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium'");
+    console.log('Görevlere priority kolonu eklendi.');
+  } catch (err) {
+    if (err.errno !== 1060) console.error('Tasks priority migrasyon hatası:', err);
+  }
+
+  try {
+    await connection.query("ALTER TABLE Tasks ADD COLUMN tags VARCHAR(255) DEFAULT ''");
+    console.log('Görevlere tags kolonu eklendi.');
+  } catch (err) {
+    if (err.errno !== 1060) console.error('Tasks tags migrasyon hatası:', err);
+  }
+
+  try {
+    await connection.query("ALTER TABLE Tasks ADD COLUMN estimate_points INT DEFAULT NULL");
+    console.log('Görevlere estimate_points kolonu eklendi.');
+  } catch (err) {
+    if (err.errno !== 1060) console.error('Tasks estimate_points migrasyon hatası:', err);
+  }
+};
+
 pool.getConnection()
-  .then((connection) => {
+  .then(async (connection) => {
     console.log('MySQL veritabanına başarıyla bağlanıldı.');
+    await runMigrations(connection);
     connection.release();
+    console.log('Veritabanı hazır.');
   })
   .catch((err) => {
     console.error('MySQL bağlantı hatası:', err.message);

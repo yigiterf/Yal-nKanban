@@ -236,3 +236,122 @@ aside .rounded-3:hover {
     background-position: -200% 0;
   }
 }
+
+/* ============================================
+   DARK MODE OVERRIDES
+   ============================================ */
+[data-theme="dark"] {
+  --custom-bg: #0b0f19;
+  --custom-text: #f8fafc;
+  --bs-body-bg: var(--custom-bg);
+  --bs-body-color: var(--custom-text);
+  
+  body {
+    background-color: var(--custom-bg);
+    color: var(--custom-text);
+  }
+
+  /* Cards and Modals */
+  .card {
+    background: rgba(22, 30, 49, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .card-body, .modal-content, .dropdown-menu {
+    background-color: #111b2e !important;
+    color: #f8fafc !important;
+    border-color: #1e2d4a !important;
+  }
+
+  .modal-header, .modal-footer {
+    border-color: #1e2d4a !important;
+  }
+
+  /* Inputs and Form Controls */
+  .form-control, .form-select {
+    background-color: #172237 !important;
+    color: #f8fafc !important;
+    border-color: #2a3c5a !important;
+  }
+
+  .form-control:focus, .form-select:focus {
+    background-color: #1a273f !important;
+    color: #f8fafc !important;
+    border-color: var(--custom-primary) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .form-label {
+    color: #94a3b8;
+  }
+
+  /* Buttons */
+  .btn-light {
+    background-color: #172237 !important;
+    color: #f8fafc !important;
+    border: 1px solid #2a3c5a !important;
+  }
+
+  .btn-light:hover {
+    background-color: #22314e !important;
+    border-color: #3b527a !important;
+    color: #ffffff !important;
+  }
+
+  .btn-close {
+    filter: invert(1) grayscale(1) brightness(2);
+  }
+
+  /* Layout and Navigation */
+  aside {
+    background-color: #0e1626 !important;
+    border-right: 1px solid #1c273c !important;
+  }
+
+  aside .rounded-3:hover {
+    background-color: #172237 !important;
+  }
+
+  .border-bottom, .border-top, .border-start, .border-end {
+    border-color: #1c273c !important;
+  }
+
+  .text-muted, .small.text-muted {
+    color: #64748b !important;
+  }
+
+  .bg-light {
+    background-color: #172237 !important;
+  }
+
+  .text-dark {
+    color: #f8fafc !important;
+  }
+
+  .badge.bg-light {
+    background-color: #172237 !important;
+    color: #94a3b8 !important;
+    border-color: #2a3c5a !important;
+  }
+
+  .dropdown-item {
+    color: #e2e8f0 !important;
+  }
+
+  .dropdown-item:hover {
+    background-color: #1e2d4a !important;
+    color: #ffffff !important;
+  }
+
+  .kanban-column {
+    background-color: #0e1626 !important;
+    border: 1px solid #1c273c !important;
+  }
+
+  /* Confirm Dialog Specifics */
+  .confirm-dialog-content {
+    background-color: #111b2e !important;
+    color: #f8fafc !important;
+  }
+}

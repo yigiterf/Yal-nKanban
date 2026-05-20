@@ -4,14 +4,14 @@ const ProjectMember = require('../models/projectMemberModel');
 // POST /api/projects — Yeni proje oluştur
 const createProject = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, color, emoji } = req.body;
     const userId = req.user.id;
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Proje adı boş bırakılamaz.' });
     }
 
-    const result = await Project.create(name.trim(), description || '', userId);
+    const result = await Project.create(name.trim(), description || '', userId, color, emoji);
 
     // Proje sahibini otomatik olarak üye tablosuna ekle
     await ProjectMember.addOwner(result.insertId, userId);
@@ -55,14 +55,14 @@ const getProjectById = async (req, res) => {
 // PATCH /api/projects/:id — Projeyi güncelle (sadece sahibi)
 const updateProject = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, color, emoji } = req.body;
     const userId = req.user.id;
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Proje adı boş bırakılamaz.' });
     }
 
-    const result = await Project.update(req.params.id, name.trim(), description || '', userId);
+    const result = await Project.update(req.params.id, name.trim(), description || '', color, emoji, userId);
 
     if (result.affectedRows === 0) {
       return res.status(403).json({

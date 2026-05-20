@@ -8,7 +8,7 @@ const VALID_STATUSES = ['todo', 'in_progress', 'done'];
 const createTask = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { title, description, assignedTo, dueDate } = req.body;
+    const { title, description, assignedTo, dueDate, priority, tags, estimatePoints } = req.body;
 
     if (!title || title.trim() === '') {
       return res.status(400).json({ message: 'Görev başlığı boş bırakılamaz.' });
@@ -38,7 +38,10 @@ const createTask = async (req, res) => {
       title.trim(),
       description || '',
       assignedTo || null,
-      dueDate || null
+      dueDate || null,
+      priority || 'medium',
+      tags || '',
+      estimatePoints || null
     );
 
     res.status(201).json({
@@ -134,7 +137,7 @@ const assignTask = async (req, res) => {
 // PATCH /api/tasks/:id — Görev başlık/açıklama/due_date güncelle
 const updateTask = async (req, res) => {
   try {
-    const { title, description, dueDate, assignedTo } = req.body;
+    const { title, description, dueDate, assignedTo, priority, tags, estimatePoints } = req.body;
 
     if (!title || title.trim() === '') {
       return res.status(400).json({ message: 'Görev başlığı boş bırakılamaz.' });
@@ -145,7 +148,15 @@ const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Görev bulunamadı.' });
     }
 
-    await Task.update(req.params.id, title.trim(), description || '', dueDate || null);
+    await Task.update(
+      req.params.id,
+      title.trim(),
+      description || '',
+      dueDate || null,
+      priority || 'medium',
+      tags || '',
+      estimatePoints || null
+    );
 
     // Atama değiştiyse ayrıca güncelle
     if (assignedTo !== undefined && assignedTo != task.assigned_to) {
@@ -155,6 +166,18 @@ const updateTask = async (req, res) => {
     res.json({ message: 'Görev güncellendi.' });
   } catch (error) {
     console.error('updateTask hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
+  }
+};
+
+// GET /api/tasks/assigned — Kullanıcıya atanmış tüm görevleri listele
+const getMyAssignedTasks = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const tasks = await Task.findAllAssignedByUser(userId);
+    res.json(tasks);
+  } catch (error) {
+    console.error('getMyAssignedTasks hatası:', error);
     res.status(500).json({ message: 'Sunucu hatası.' });
   }
 };
@@ -179,6 +202,7 @@ module.exports = {
   createTask,
   getTasksByProject,
   getUpcomingTasks,
+  getMyAssignedTasks,
   updateTaskStatus,
   assignTask,
   updateTask,

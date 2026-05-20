@@ -19,6 +19,9 @@ const getDueDateStatus = (dueDate) => {
   return { label: `${diffDays} gün kaldı`, color: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0', icon: '🟢', urgent: false };
 };
 
+const PROJECT_COLORS = ['#6366F1', '#10B981', '#EC4899', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
+const PROJECT_EMOJIS = ['📁', '🚀', '💻', '🎨', '📚', '🎯', '🛠️', '📊', '⚡', '🌟', '🧩', '📈'];
+
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
   const [projects, setProjects] = useState([]);
@@ -34,12 +37,16 @@ const Dashboard = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0]);
+  const [newProjectEmoji, setNewProjectEmoji] = useState(PROJECT_EMOJIS[0]);
   const [createError, setCreateError] = useState(null);
 
   // Proje düzenleme state
   const [editingProject, setEditingProject] = useState(null);
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectDesc, setEditProjectDesc] = useState('');
+  const [editProjectColor, setEditProjectColor] = useState(PROJECT_COLORS[0]);
+  const [editProjectEmoji, setEditProjectEmoji] = useState(PROJECT_EMOJIS[0]);
   const [editError, setEditError] = useState(null);
 
   // Silme onay dialog state
@@ -54,24 +61,24 @@ const Dashboard = () => {
   };
 
   // API'den projeleri ve yaklaşan görevleri çek
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [projectsRes, upcomingRes] = await Promise.all([
-          api.get('/projects'),
-          api.get('/tasks/upcoming'),
-        ]);
-        setProjects(projectsRes.data);
-        setUpcomingTasks(upcomingRes.data);
-      } catch (err) {
-        setError('Veriler yüklenirken hata oluştu.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [projectsRes, upcomingRes] = await Promise.all([
+        api.get('/projects'),
+        api.get('/tasks/upcoming'),
+      ]);
+      setProjects(projectsRes.data);
+      setUpcomingTasks(upcomingRes.data);
+    } catch (err) {
+      setError('Veriler yüklenirken hata oluştu.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -94,6 +101,8 @@ const Dashboard = () => {
       const res = await api.post('/projects', {
         name: newProjectName.trim(),
         description: newProjectDesc.trim(),
+        color: newProjectColor,
+        emoji: newProjectEmoji,
       });
 
       // Projeyi listeye ekle (optimistic)
@@ -101,6 +110,8 @@ const Dashboard = () => {
         id: res.data.projectId,
         name: newProjectName.trim(),
         description: newProjectDesc.trim(),
+        color: newProjectColor,
+        emoji: newProjectEmoji,
         created_at: new Date().toISOString(),
         role: 'owner',
         task_count: 0,
@@ -108,8 +119,13 @@ const Dashboard = () => {
       setProjects((prev) => [newProject, ...prev]);
       setNewProjectName('');
       setNewProjectDesc('');
+      setNewProjectColor(PROJECT_COLORS[0]);
+      setNewProjectEmoji(PROJECT_EMOJIS[0]);
       setShowCreateForm(false);
       showToast('Proje oluşturuldu!');
+      
+      // Sidebar'ı güncelle
+      window.dispatchEvent(new Event('projects-changed'));
     } catch (err) {
       setCreateError(err.response?.data?.message || 'Proje oluşturulamadı.');
     }
@@ -122,6 +138,8 @@ const Dashboard = () => {
     setEditingProject(project);
     setEditProjectName(project.name);
     setEditProjectDesc(project.description || '');
+    setEditProjectColor(project.color || PROJECT_COLORS[0]);
+    setEditProjectEmoji(project.emoji || PROJECT_EMOJIS[0]);
     setEditError(null);
   };
 
@@ -139,17 +157,28 @@ const Dashboard = () => {
       await api.patch(`/projects/${editingProject.id}`, {
         name: editProjectName.trim(),
         description: editProjectDesc.trim(),
+        color: editProjectColor,
+        emoji: editProjectEmoji,
       });
 
       setProjects((prev) =>
         prev.map((p) =>
           p.id === editingProject.id
-            ? { ...p, name: editProjectName.trim(), description: editProjectDesc.trim() }
+            ? {
+                ...p,
+                name: editProjectName.trim(),
+                description: editProjectDesc.trim(),
+                color: editProjectColor,
+                emoji: editProjectEmoji,
+              }
             : p
         )
       );
       setEditingProject(null);
       showToast('Proje güncellendi!');
+      
+      // Sidebar'ı güncelle
+      window.dispatchEvent(new Event('projects-changed'));
     } catch (err) {
       setEditError(err.response?.data?.message || 'Proje güncellenemedi.');
     }
@@ -164,14 +193,17 @@ const Dashboard = () => {
     try {
       await api.delete(`/projects/${projectId}`);
       showToast('Proje silindi.');
+      
+      // Sidebar'ı güncelle
+      window.dispatchEvent(new Event('projects-changed'));
     } catch (err) {
       setProjects(oldProjects);
       showToast(err.response?.data?.message || 'Proje silinemedi.', 'danger');
     }
   };
 
-  // Renk paleti (projelere sırayla renk atar)
-  const colors = ['#6366F1', '#A5B4FC', '#FCA5A5', '#10B981', '#F59E0B', '#EC4899'];
+  // Renk paleti (fallback için)
+  const colors = PROJECT_COLORS;
 
   if (loading) {
     return (
@@ -273,6 +305,49 @@ const Dashboard = () => {
                         onChange={(e) => setEditProjectDesc(e.target.value)}
                       />
                     </div>
+                    <div className="mb-3">
+                      <label className="form-label d-block">Proje Rengi</label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {PROJECT_COLORS.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            className="rounded-circle border-0"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              backgroundColor: c,
+                              transform: editProjectColor === c ? 'scale(1.2)' : 'none',
+                              border: editProjectColor === c ? '2px solid white' : 'none',
+                              boxShadow: editProjectColor === c ? `0 0 0 2px ${c}` : 'none',
+                              transition: 'transform 0.15s ease',
+                            }}
+                            onClick={() => setEditProjectColor(c)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label d-block">Proje Emojisi</label>
+                      <div className="d-flex flex-wrap gap-2 p-2 border rounded bg-light" style={{ maxHeight: '110px', overflowY: 'auto' }}>
+                        {PROJECT_EMOJIS.map((em) => (
+                          <button
+                            key={em}
+                            type="button"
+                            className="btn btn-sm btn-light border"
+                            style={{
+                              fontSize: '1.2rem',
+                              padding: '6px 12px',
+                              backgroundColor: editProjectEmoji === em ? 'rgba(99, 102, 241, 0.15)' : '',
+                              borderColor: editProjectEmoji === em ? 'var(--custom-primary)' : 'rgba(0,0,0,0.1)',
+                            }}
+                            onClick={() => setEditProjectEmoji(em)}
+                          >
+                            {em}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                   <div className="modal-footer border-0 px-4 pb-4 pt-0">
                     <button type="button" className="btn btn-light fw-medium" onClick={() => setEditingProject(null)}>
@@ -288,6 +363,49 @@ const Dashboard = () => {
           </div>
         </>
       )}
+
+      {/* ─── İSTATİSTİKLER BÖLÜMÜ ─── */}
+      <div className="row g-3 mb-4 mt-1">
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 bg-white" style={{ borderRadius: '16px' }}>
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '48px', height: '48px', backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--custom-primary)', fontSize: '1.5rem' }}>
+                📁
+              </div>
+              <div>
+                <h6 className="text-muted small mb-1 fw-medium">Toplam Proje</h6>
+                <h4 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>{projects.length}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 bg-white" style={{ borderRadius: '16px' }}>
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '48px', height: '48px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '1.5rem' }}>
+                📋
+              </div>
+              <div>
+                <h6 className="text-muted small mb-1 fw-medium">Toplam Görev</h6>
+                <h4 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>{projects.reduce((sum, p) => sum + (p.task_count || 0), 0)}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 bg-white" style={{ borderRadius: '16px' }}>
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-flex align-items-center justify-content-center rounded-3" style={{ width: '48px', height: '48px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', fontSize: '1.5rem' }}>
+                ⏰
+              </div>
+              <div>
+                <h6 className="text-muted small mb-1 fw-medium">Yaklaşan Görevler</h6>
+                <h4 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>{upcomingTasks.length}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ─── YAKLAŞAN GÖREVLER BÖLÜMÜ ─── */}
       {upcomingTasks.length > 0 && (
@@ -447,35 +565,83 @@ const Dashboard = () => {
                 </div>
               )}
               <div className="row g-3">
-                <div className="col-md-5">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Proje adı"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    autoFocus
-                  />
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label className="form-label small">Proje Adı</label>
+                    <input
+                      type="text"
+                      className="form-control form-control-sm"
+                      placeholder="Proje adı"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label small">Açıklama (opsiyonel)</label>
+                    <textarea
+                      className="form-control form-control-sm"
+                      placeholder="Açıklama..."
+                      rows="2"
+                      value={newProjectDesc}
+                      onChange={(e) => setNewProjectDesc(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className="col-md-5">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Açıklama (opsiyonel)"
-                    value={newProjectDesc}
-                    onChange={(e) => setNewProjectDesc(e.target.value)}
-                  />
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label className="form-label small d-block">Proje Rengi</label>
+                    <div className="d-flex flex-wrap gap-2">
+                      {PROJECT_COLORS.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          className="rounded-circle border-0"
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            backgroundColor: c,
+                            transform: newProjectColor === c ? 'scale(1.2)' : 'none',
+                            border: newProjectColor === c ? '2px solid white' : 'none',
+                            boxShadow: newProjectColor === c ? `0 0 0 2px ${c}` : 'none',
+                            transition: 'transform 0.15s ease',
+                          }}
+                          onClick={() => setNewProjectColor(c)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label small d-block">Proje Emojisi</label>
+                    <div className="d-flex flex-wrap gap-2 p-1 border rounded bg-light" style={{ maxHeight: '70px', overflowY: 'auto' }}>
+                      {PROJECT_EMOJIS.map((em) => (
+                        <button
+                          key={em}
+                          type="button"
+                          className="btn btn-sm btn-light border p-1 px-2"
+                          style={{
+                            fontSize: '1rem',
+                            backgroundColor: newProjectEmoji === em ? 'rgba(99, 102, 241, 0.15)' : '',
+                            borderColor: newProjectEmoji === em ? 'var(--custom-primary)' : 'rgba(0,0,0,0.1)',
+                          }}
+                          onClick={() => setNewProjectEmoji(em)}
+                        >
+                          {em}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <div className="col-md-2 d-flex gap-2">
-                  <button type="submit" className="btn btn-primary flex-grow-1">
-                    Kaydet
-                  </button>
+                <div className="col-12 d-flex justify-content-end gap-2 border-top pt-3">
                   <button
                     type="button"
-                    className="btn btn-light"
+                    className="btn btn-sm btn-light"
                     onClick={() => setShowCreateForm(false)}
                   >
-                    ✕
+                    Vazgeç
+                  </button>
+                  <button type="submit" className="btn btn-sm btn-primary">
+                    Proje Oluştur
                   </button>
                 </div>
               </div>
@@ -512,10 +678,12 @@ const Dashboard = () => {
                         className="w-100 d-flex align-items-center justify-content-center"
                         style={{
                           height: '70%',
-                          background: `linear-gradient(135deg, ${colors[index % colors.length]}80, ${colors[index % colors.length]})`,
+                          background: `linear-gradient(135deg, ${(project.color || '#6366F1')}80, ${project.color || '#6366F1'})`,
                         }}
                       >
-                        <span style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.7)' }}>📁</span>
+                        <span style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.8)' }}>
+                          {project.emoji || '📁'}
+                        </span>
                       </div>
                       <div className="p-3 d-flex flex-column justify-content-between flex-grow-1 bg-white">
                         <h6
@@ -589,13 +757,16 @@ const Dashboard = () => {
                     <div className="card border-0 shadow-sm px-4 py-3 bg-white d-flex flex-row align-items-center justify-content-between">
                       <div className="d-flex align-items-center gap-3">
                         <div
-                          className="rounded"
+                          className="rounded d-flex align-items-center justify-content-center"
                           style={{
                             width: '40px',
                             height: '40px',
-                            backgroundColor: colors[index % colors.length],
+                            backgroundColor: project.color || 'var(--custom-primary)',
+                            fontSize: '1.2rem',
                           }}
-                        />
+                        >
+                          {project.emoji || '📁'}
+                        </div>
                         <div>
                           <h6 className="fw-semibold mb-0" style={{ color: 'var(--custom-text)' }}>
                             {project.name}

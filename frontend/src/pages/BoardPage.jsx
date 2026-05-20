@@ -6,6 +6,9 @@ import KanbanBoard from '../components/KanbanBoard';
 import TaskModal from '../components/TaskModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 
+const PROJECT_COLORS = ['#6366F1', '#10B981', '#EC4899', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
+const PROJECT_EMOJIS = ['📁', '🚀', '💻', '🎨', '📚', '🎯', '🛠️', '📊', '⚡', '🌟', '🧩', '📈'];
+
 const BoardPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -33,6 +36,8 @@ const BoardPage = () => {
   const [showProjectEdit, setShowProjectEdit] = useState(false);
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectDesc, setEditProjectDesc] = useState('');
+  const [editProjectColor, setEditProjectColor] = useState('#6366F1');
+  const [editProjectEmoji, setEditProjectEmoji] = useState('📁');
   const [editProjectError, setEditProjectError] = useState(null);
 
   // Toast state
@@ -184,6 +189,8 @@ const BoardPage = () => {
   const handleStartProjectEdit = () => {
     setEditProjectName(project?.name || '');
     setEditProjectDesc(project?.description || '');
+    setEditProjectColor(project?.color || PROJECT_COLORS[0]);
+    setEditProjectEmoji(project?.emoji || PROJECT_EMOJIS[0]);
     setEditProjectError(null);
     setShowProjectEdit(true);
   };
@@ -201,14 +208,21 @@ const BoardPage = () => {
       await api.patch(`/projects/${projectId}`, {
         name: editProjectName.trim(),
         description: editProjectDesc.trim(),
+        color: editProjectColor,
+        emoji: editProjectEmoji,
       });
       setProject((prev) => ({
         ...prev,
         name: editProjectName.trim(),
         description: editProjectDesc.trim(),
+        color: editProjectColor,
+        emoji: editProjectEmoji,
       }));
       setShowProjectEdit(false);
       showToast('Proje güncellendi!');
+      
+      // Sidebar'ı güncelle
+      window.dispatchEvent(new Event('projects-changed'));
     } catch (err) {
       setEditProjectError(err.response?.data?.message || 'Proje güncellenemedi.');
     }
@@ -355,7 +369,7 @@ const BoardPage = () => {
                         autoFocus
                       />
                     </div>
-                    <div className="mb-3">
+                     <div className="mb-3">
                       <label className="form-label">
                         Açıklama <small className="text-muted">(opsiyonel)</small>
                       </label>
@@ -365,6 +379,49 @@ const BoardPage = () => {
                         value={editProjectDesc}
                         onChange={(e) => setEditProjectDesc(e.target.value)}
                       />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label d-block">Proje Rengi</label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {PROJECT_COLORS.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            className="rounded-circle border-0"
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              backgroundColor: c,
+                              transform: editProjectColor === c ? 'scale(1.2)' : 'none',
+                              border: editProjectColor === c ? '2px solid white' : 'none',
+                              boxShadow: editProjectColor === c ? `0 0 0 2px ${c}` : 'none',
+                              transition: 'transform 0.15s ease',
+                            }}
+                            onClick={() => setEditProjectColor(c)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label d-block">Proje Emojisi</label>
+                      <div className="d-flex flex-wrap gap-2 p-2 border rounded bg-light" style={{ maxHeight: '110px', overflowY: 'auto' }}>
+                        {PROJECT_EMOJIS.map((em) => (
+                          <button
+                            key={em}
+                            type="button"
+                            className="btn btn-sm btn-light border"
+                            style={{
+                              fontSize: '1.2rem',
+                              padding: '6px 12px',
+                              backgroundColor: editProjectEmoji === em ? 'rgba(99, 102, 241, 0.15)' : '',
+                              borderColor: editProjectEmoji === em ? 'var(--custom-primary)' : 'rgba(0,0,0,0.1)',
+                            }}
+                            onClick={() => setEditProjectEmoji(em)}
+                          >
+                            {em}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <div className="modal-footer border-0 px-4 pb-4 pt-0">
@@ -391,7 +448,8 @@ const BoardPage = () => {
           </button>
           <div>
             <div className="d-flex align-items-center gap-2">
-              <h3 className="fw-bold mb-0" style={{ color: 'var(--custom-text)', letterSpacing: '-0.5px' }}>
+              <span style={{ fontSize: '1.8rem' }}>{project?.emoji || '📁'}</span>
+              <h3 className="fw-bold mb-0" style={{ color: project?.color || 'var(--custom-text)', letterSpacing: '-0.5px' }}>
                 {project?.name}
               </h3>
               {isOwner && (
