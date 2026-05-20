@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true }); // projectId için mergeParams
 const authMiddleware = require('../middlewares/authMiddleware');
+const { taskValidation } = require('../middlewares/validationMiddleware');
 const {
   createTask,
   getTasksByProject,
@@ -14,7 +15,7 @@ const {
 router.use(authMiddleware);
 
 // Proje kapsamlı rotalar (projectRoutes içinden mount edilecek)
-router.post('/', createTask);           // Görev oluştur
+router.post('/', taskValidation, createTask);           // Görev oluştur
 router.get('/', getTasksByProject);     // Görevleri listele
 
 module.exports = router;

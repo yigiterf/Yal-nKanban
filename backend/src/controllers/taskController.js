@@ -34,6 +34,11 @@ const createTask = async (req, res) => {
       if (!user) {
         return res.status(404).json({ message: 'Atanacak kullanıcı bulunamadı.' });
       }
+
+      const isAssigneeMember = await ProjectMember.isMember(projectId, assignedTo);
+      if (!isAssigneeMember) {
+        return res.status(400).json({ message: 'Atanacak kullanıcı bu projenin üyesi değil.' });
+      }
     }
 
     const result = await Task.create(
@@ -65,6 +70,11 @@ const getTasksByProject = async (req, res) => {
     const project = await Project.findById(projectId);
     if (!project) {
       return res.status(404).json({ message: 'Proje bulunamadı.' });
+    }
+
+    const isMember = await ProjectMember.isMember(projectId, req.user.id);
+    if (!isMember) {
+      return res.status(403).json({ message: 'Bu projeye erişim yetkiniz yok.' });
     }
 
     const tasks = await Task.findByProject(projectId);
@@ -152,6 +162,11 @@ const assignTask = async (req, res) => {
         return res.status(404).json({ message: 'Atanacak kullanıcı bulunamadı.' });
       }
 
+      const isAssigneeMember = await ProjectMember.isMember(task.project_id, userId);
+      if (!isAssigneeMember) {
+        return res.status(400).json({ message: 'Atanacak kullanıcı bu projenin üyesi değil.' });
+      }
+
       // Atanan kişiye bildirim gönder
       if (userId !== req.user.id) {
         await Notification.create(
@@ -194,6 +209,30 @@ const updateTask = async (req, res) => {
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Görev bulunamadı.' });
+    }
+
+    // Üyelik kontrolü
+    const isMember = await ProjectMember.isMember(task.project_id, req.user.id);
+    if (!isMember) {
+      return res.status(403).json({ message: 'Bu projenin üyesi değilsiniz.' });
+    }
+
+    // Proje sahibi kontrolü — sadece sahip görev detaylarını düzenleyebilir
+    const project = await Project.findById(task.project_id);
+    if (project.created_by !== req.user.id) {
+      return res.status(403).json({ message: 'Sadece proje yöneticisi görevi düzenleyebilir.' });
+    }
+
+    if (assignedTo) {
+      const user = await User.findById(assignedTo);
+      if (!user) {
+        return res.status(404).json({ message: 'Atanacak kullanıcı bulunamadı.' });
+      }
+
+      const isAssigneeMember = await ProjectMember.isMember(task.project_id, assignedTo);
+      if (!isAssigneeMember) {
+        return res.status(400).json({ message: 'Atanacak kullanıcı bu projenin üyesi değil.' });
+      }
     }
 
     await Task.update(
