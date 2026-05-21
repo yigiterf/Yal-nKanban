@@ -49,11 +49,18 @@ const ProjectCard = ({ project, onClick }) => {
           <div className="d-flex align-items-center gap-3">
             <span style={{ fontSize: '2rem' }}>{project.emoji || '📁'}</span>
             <div>
-              <h5 className="fw-bold mb-0" style={{ color: 'var(--custom-text)', fontSize: '15px' }}>
-                {project.name}
-              </h5>
+              <div className="d-flex align-items-center gap-2">
+                <h5 className="fw-bold mb-0" style={{ color: 'var(--custom-text)', fontSize: '15px' }}>
+                  {project.name}
+                </h5>
+                {project.is_full && (
+                  <span className="badge bg-danger rounded-pill" style={{ fontSize: '10px' }}>
+                    Kontenjan Dolu
+                  </span>
+                )}
+              </div>
               <small className="text-muted">
-                👤 {project.owner_name} · {project.member_count} üye
+                👤 {project.owner_name} · {project.member_count}{project.max_members ? `/${project.max_members}` : ''} üye
               </small>
             </div>
           </div>
@@ -115,7 +122,7 @@ const ProjectCard = ({ project, onClick }) => {
 };
 
 // ─── Görev Satırı ─────────────────────────────────────────────────────────────
-const TaskRow = ({ task, onClaim, claimingId, currentUserId }) => {
+const TaskRow = ({ task, onClaim, claimingId, currentUserId, isProjectFull, isProjectMember }) => {
   const pr = priorityConfig[task.priority] || priorityConfig.medium;
   const st = statusConfig[task.status] || statusConfig.todo;
   const isMine = task.assigned_to === currentUserId;
@@ -166,18 +173,20 @@ const TaskRow = ({ task, onClaim, claimingId, currentUserId }) => {
           {task.status !== 'done' && !isMine && (
             <button
               className="btn btn-sm fw-semibold"
-              disabled={isClaiming}
+              disabled={isClaiming || (isProjectFull && !isProjectMember)}
               onClick={() => onClaim(task.id)}
               style={{
-                background: isAssigned ? 'transparent' : 'var(--custom-primary)',
-                color: isAssigned ? 'var(--custom-primary)' : 'white',
-                border: isAssigned ? '1px solid var(--custom-primary)' : 'none',
+                background: (isProjectFull && !isProjectMember) ? '#9ca3af' : isAssigned ? 'transparent' : 'var(--custom-primary)',
+                color: (isProjectFull && !isProjectMember) ? 'white' : isAssigned ? 'var(--custom-primary)' : 'white',
+                border: (isProjectFull && !isProjectMember) ? 'none' : isAssigned ? '1px solid var(--custom-primary)' : 'none',
                 borderRadius: '8px',
                 fontSize: '11px',
                 padding: '5px 12px',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s ease',
+                cursor: (isProjectFull && !isProjectMember) ? 'not-allowed' : 'pointer'
               }}
+              title={(isProjectFull && !isProjectMember) ? 'Proje kontenjanı dolu' : ''}
             >
               {isClaiming ? '⏳ ...' : isAssigned ? '🔄 Devral' : '🙋 Üstlen'}
             </button>
@@ -316,15 +325,22 @@ const ProjectDrawer = ({ projectId, onClose, currentUserId, onJoined }) => {
                     </div>
                   ))}
                 </div>
-                <span className="text-muted small">{data.members.length} üye</span>
+                <span className="text-muted small">{data.members.length}{data.project.max_members ? `/${data.project.max_members}` : ''} üye</span>
               </div>
+
+              {data.isFull && !data.isMember && (
+                <div className="alert alert-warning py-2 mb-3 small" style={{ borderRadius: '8px' }}>
+                  ⚠️ Bu projenin kontenjanı dolmuştur. Şu an için sadece görevleri inceleyebilirsiniz.
+                </div>
+              )}
 
               <div className="d-flex gap-2 flex-wrap">
                 {!data.isMember && (
                   <button
                     className="btn btn-sm fw-semibold"
                     onClick={handleJoin}
-                    style={{ background: 'var(--custom-primary)', color: 'white', borderRadius: '8px', fontSize: '13px' }}
+                    disabled={data.isFull}
+                    style={{ background: data.isFull ? '#9ca3af' : 'var(--custom-primary)', color: 'white', borderRadius: '8px', fontSize: '13px', cursor: data.isFull ? 'not-allowed' : 'pointer', border: 'none' }}
                   >
                     🚀 Projeye Katıl
                   </button>
@@ -368,6 +384,8 @@ const ProjectDrawer = ({ projectId, onClose, currentUserId, onJoined }) => {
                     onClaim={handleClaim}
                     claimingId={claimingId}
                     currentUserId={currentUserId}
+                    isProjectFull={data.isFull}
+                    isProjectMember={data.isMember}
                   />
                 ))
               ) : (

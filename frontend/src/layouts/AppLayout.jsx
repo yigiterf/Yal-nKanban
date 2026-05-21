@@ -19,6 +19,7 @@ const AppLayout = ({ children }) => {
   const [newProjectDesc, setNewProjectDesc] = useState('');
   const [newProjectColor, setNewProjectColor] = useState('#4F46E5');
   const [newProjectEmoji, setNewProjectEmoji] = useState('📁');
+  const [newProjectMaxMembers, setNewProjectMaxMembers] = useState('');
   const [createError, setCreateError] = useState(null);
 
   const PROJECT_COLORS = ['#4F46E5', '#10B981', '#EC4899', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
@@ -59,12 +60,14 @@ const AppLayout = ({ children }) => {
         description: newProjectDesc.trim(),
         color: newProjectColor,
         emoji: newProjectEmoji,
+        maxMembers: newProjectMaxMembers ? parseInt(newProjectMaxMembers) : null,
       });
 
       setNewProjectName('');
       setNewProjectDesc('');
       setNewProjectColor('#4F46E5');
       setNewProjectEmoji('📁');
+      setNewProjectMaxMembers('');
       setShowCreateModal(false);
 
       fetchSidebarProjects();
@@ -328,6 +331,17 @@ const AppLayout = ({ children }) => {
                       value={newProjectDesc}
                       onChange={(e) => setNewProjectDesc(e.target.value)}
                       rows="2"
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label small fw-medium">Maksimum Üye Sayısı (İsteğe Bağlı)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Örn: 10 (Boş bırakılırsa sınırsız)"
+                      value={newProjectMaxMembers}
+                      onChange={(e) => setNewProjectMaxMembers(e.target.value)}
+                      min="1"
                     />
                   </div>
                   <div className="mb-3">

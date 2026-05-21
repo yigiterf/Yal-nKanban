@@ -2,10 +2,10 @@ const pool = require('../config/db');
 
 const Project = {
   // Yeni proje oluştur
-  create: async (name, description, userId, color = '#6366F1', emoji = '📁') => {
+  create: async (name, description, userId, color = '#6366F1', emoji = '📁', maxMembers = null) => {
     const [result] = await pool.execute(
-      'INSERT INTO Projects (name, description, created_by, color, emoji) VALUES (?, ?, ?, ?, ?)',
-      [name, description, userId, color, emoji]
+      'INSERT INTO Projects (name, description, created_by, color, emoji, max_members) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, description, userId, color, emoji, maxMembers]
     );
     return result;
   },
@@ -35,10 +35,10 @@ const Project = {
   },
 
   // Projeyi güncelle (sadece sahibi güncelleyebilir)
-  update: async (id, name, description, color, emoji, userId) => {
+  update: async (id, name, description, color, emoji, maxMembers, userId) => {
     const [result] = await pool.execute(
-      'UPDATE Projects SET name = ?, description = ?, color = ?, emoji = ? WHERE id = ? AND created_by = ?',
-      [name, description, color, emoji, id, userId]
+      'UPDATE Projects SET name = ?, description = ?, color = ?, emoji = ?, max_members = ? WHERE id = ? AND created_by = ?',
+      [name, description, color, emoji, maxMembers, id, userId]
     );
     return result;
   },

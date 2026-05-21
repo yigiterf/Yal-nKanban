@@ -90,6 +90,13 @@ const runMigrations = async (connection) => {
     if (err.errno !== 1060) console.error('Projects emoji migrasyon hatası:', err);
   }
 
+  try {
+    await connection.query("ALTER TABLE Projects ADD COLUMN max_members INT DEFAULT NULL");
+    console.log('Projelere max_members kolonu eklendi.');
+  } catch (err) {
+    if (err.errno !== 1060) console.error('Projects max_members migrasyon hatası:', err);
+  }
+
   // Tasks tablosu için yeni kolonlar
   try {
     await connection.query("ALTER TABLE Tasks ADD COLUMN priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium'");
