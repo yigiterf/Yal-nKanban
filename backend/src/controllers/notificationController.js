@@ -1,8 +1,22 @@
 const Notification = require('../models/notificationModel');
+const pool = require('../config/db');
+
+let isMigrationRun = false;
+const ensureRelatedIdColumn = async () => {
+  if (isMigrationRun) return;
+  try {
+    await pool.query('ALTER TABLE Notifications ADD COLUMN related_id INT NULL');
+    console.log('Notifications tablosuna related_id kolonu başarıyla eklendi (Controller).');
+  } catch (err) {
+    // Kolon zaten varsa veya başka bir hata varsa yoksay
+  }
+  isMigrationRun = true;
+};
 
 // GET /api/notifications — Kullanıcının bildirimlerini listele
 const getNotifications = async (req, res) => {
   try {
+    await ensureRelatedIdColumn();
     const userId = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 20, 50);
@@ -23,6 +37,7 @@ const getNotifications = async (req, res) => {
 // GET /api/notifications/unread-count — Okunmamış bildirim sayısı
 const getUnreadCount = async (req, res) => {
   try {
+    await ensureRelatedIdColumn();
     const count = await Notification.getUnreadCount(req.user.id);
     res.json({ unreadCount: count });
   } catch (error) {
@@ -56,4 +71,18 @@ const markAllAsRead = async (req, res) => {
   }
 };
 
-module.exports = { getNotifications, getUnreadCount, markAsRead, markAllAsRead };
+// DELETE /api/notifications/:id — Tek bildirimi sil
+const deleteNotification = async (req, res) => {
+  try {
+    const result = await Notification.delete(req.params.id, req.user.id);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Bildirim bulunamadı veya silme yetkiniz yok.' });
+    }
+    res.json({ message: 'Bildirim silindi.' });
+  } catch (error) {
+    console.error('deleteNotification hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
+  }
+};
+
+module.exports = { getNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification };

@@ -241,8 +241,8 @@ const ProjectDrawer = ({ projectId, onClose, currentUserId, onJoined }) => {
 
   const handleJoin = async () => {
     try {
-      await api.post(`/discover/projects/${projectId}/join`);
-      showToast('Projeye katıldınız! Sol menüde görünecek. 🎉');
+      const res = await api.post(`/discover/projects/${projectId}/join`);
+      showToast(res.data?.message || 'Katılım talebiniz iletildi! 🎉');
       fetchDetail();
       onJoined && onJoined();
     } catch (err) {
@@ -339,10 +339,22 @@ const ProjectDrawer = ({ projectId, onClose, currentUserId, onJoined }) => {
                   <button
                     className="btn btn-sm fw-semibold"
                     onClick={handleJoin}
-                    disabled={data.isFull}
-                    style={{ background: data.isFull ? '#9ca3af' : 'var(--custom-primary)', color: 'white', borderRadius: '8px', fontSize: '13px', cursor: data.isFull ? 'not-allowed' : 'pointer', border: 'none' }}
+                    disabled={data.isFull || data.joinRequestStatus === 'pending'}
+                    style={{
+                      background: (data.isFull || data.joinRequestStatus === 'pending') ? '#9ca3af' : 'var(--custom-primary)',
+                      color: 'white',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      cursor: (data.isFull || data.joinRequestStatus === 'pending') ? 'not-allowed' : 'pointer',
+                      border: 'none',
+                      padding: '6px 14px'
+                    }}
                   >
-                    🚀 Projeye Katıl
+                    {data.joinRequestStatus === 'pending'
+                      ? '⏳ Katılım Talebi Beklemede'
+                      : data.joinRequestStatus === 'rejected'
+                        ? '🔄 Tekrar Katılım Talebi Gönder'
+                        : '🚀 Projeye Katılma Talebi Gönder'}
                   </button>
                 )}
                 {data.isMember && (
@@ -357,41 +369,54 @@ const ProjectDrawer = ({ projectId, onClose, currentUserId, onJoined }) => {
               </div>
             </div>
 
-            {/* Task list */}
+            {/* Task list or Permission Notice */}
             <div className="p-4">
-              <div className="d-flex align-items-center justify-content-between mb-3">
-                <h6 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>
-                  📋 Görevler ({data.tasks.length})
-                </h6>
-                <select
-                  className="form-select form-select-sm"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{ width: 'auto', fontSize: '12px' }}
-                >
-                  <option value="all">Tümü</option>
-                  <option value="todo">Yapılacak</option>
-                  <option value="in_progress">Devam Ediyor</option>
-                  <option value="done">Tamamlandı</option>
-                </select>
-              </div>
+              {data.isMember ? (
+                <>
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <h6 className="fw-bold mb-0" style={{ color: 'var(--custom-text)' }}>
+                      📋 Görevler ({data.tasks.length})
+                    </h6>
+                    <select
+                      className="form-select form-select-sm"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      style={{ width: 'auto', fontSize: '12px' }}
+                    >
+                      <option value="all">Tümü</option>
+                      <option value="todo">Yapılacak</option>
+                      <option value="in_progress">Devam Ediyor</option>
+                      <option value="done">Tamamlandı</option>
+                    </select>
+                  </div>
 
-              {filteredTasks.length > 0 ? (
-                filteredTasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    onClaim={handleClaim}
-                    claimingId={claimingId}
-                    currentUserId={currentUserId}
-                    isProjectFull={data.isFull}
-                    isProjectMember={data.isMember}
-                  />
-                ))
+                  {filteredTasks.length > 0 ? (
+                    filteredTasks.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        onClaim={handleClaim}
+                        claimingId={claimingId}
+                        currentUserId={currentUserId}
+                        isProjectFull={data.isFull}
+                        isProjectMember={data.isMember}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-5 text-muted">
+                      <span style={{ fontSize: '2rem' }}>📭</span>
+                      <p className="mt-2 small">Bu kategoride görev yok.</p>
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="text-center py-5 text-muted">
-                  <span style={{ fontSize: '2rem' }}>📭</span>
-                  <p className="mt-2 small">Bu kategoride görev yok.</p>
+                <div className="text-center py-5 px-3 rounded-4" style={{ background: 'rgba(0, 0, 0, 0.02)', border: '1px dashed var(--surface-border)' }}>
+                  <span style={{ fontSize: '2.5rem' }}>🔒</span>
+                  <h6 className="fw-bold mt-3 mb-2" style={{ color: 'var(--custom-text)' }}>Proje İçeriği Gizli</h6>
+                  <p className="text-muted small mb-0" style={{ lineHeight: '1.5' }}>
+                    Bu projenin görevlerini ve detaylarını görüntülemek için üye olmanız gerekmektedir.
+                    Yukarıdaki butonu kullanarak katılım talebi gönderebilirsiniz.
+                  </p>
                 </div>
               )}
             </div>

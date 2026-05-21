@@ -6,6 +6,7 @@ const {
   getUnreadCount,
   markAsRead,
   markAllAsRead,
+  deleteNotification,
 } = require('../controllers/notificationController');
 
 // Tüm rotalar JWT ile korunuyor
@@ -15,5 +16,6 @@ router.get('/', getNotifications);              // Bildirimleri listele
 router.get('/unread-count', getUnreadCount);     // Okunmamış sayısı
 router.patch('/read-all', markAllAsRead);         // Tümünü okundu yap
 router.patch('/:id/read', markAsRead);           // Tek bildirimi okundu yap
+router.delete('/:id', deleteNotification);       // Tek bildirimi sil
 
 module.exports = router;

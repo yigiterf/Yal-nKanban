@@ -1332,3 +1332,14 @@ body {
     min-width: 100%;
   }
 }
+
+/* ─── Compact Task Row ─── */
+.compact-task-row:hover {
+  background-color: rgba(99, 102, 241, 0.04) !important;
+}
+
+/* Kompakt kart hover efektini iptal et (card genel hover'ı bozmasın) */
+.compact-task-row:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}

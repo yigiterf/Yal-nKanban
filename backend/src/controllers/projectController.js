@@ -1,5 +1,7 @@
 const Project = require('../models/projectModel');
 const ProjectMember = require('../models/projectMemberModel');
+const Notification = require('../models/notificationModel');
+const JoinRequest = require('../models/joinRequestModel');
 const pool = require('../config/db');
 
 // POST /api/projects — Yeni proje oluştur
@@ -148,6 +150,14 @@ const addProjectMember = async (req, res) => {
       return res.status(400).json({ message: 'Bu kullanıcı zaten projenin üyesi.' });
     }
 
+    // Eklenen kullanıcıya bildirim gönder
+    await Notification.create(
+      result.userId,
+      'member_added',
+      `${req.user.username} sizi "${project.name}" projesine davet etti.`,
+      `/board/${projectId}`
+    );
+
     res.status(201).json({ message: 'Üye başarıyla eklendi.' });
   } catch (error) {
     console.error('addProjectMember hatası:', error);
@@ -172,6 +182,14 @@ const removeProjectMember = async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(400).json({ message: 'Üye bulunamadı veya proje sahibi çıkarılamaz.' });
     }
+
+    // Çıkarılan kullanıcıya bildirim gönder
+    await Notification.create(
+      parseInt(userId),
+      'member_removed',
+      `"${project.name}" projesinden çıkarıldınız.`,
+      null
+    );
 
     res.json({ message: 'Üye başarıyla çıkarıldı.' });
   } catch (error) {
@@ -227,6 +245,127 @@ const getProjectStats = async (req, res) => {
   }
 };
 
+// GET /api/projects/:id/join-requests — Projenin bekleyen katılım taleplerini listele
+const getJoinRequests = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.user.id;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Proje bulunamadı.' });
+    }
+    if (project.created_by !== userId) {
+      return res.status(403).json({ message: 'Sadece proje sahibi katılım taleplerini görebilir.' });
+    }
+
+    const [rows] = await pool.execute(
+      `SELECT jr.id, jr.user_id, jr.status, jr.created_at, u.username, u.email
+       FROM JoinRequests jr
+       JOIN Users u ON jr.user_id = u.id
+       WHERE jr.project_id = ? AND jr.status = 'pending'
+       ORDER BY jr.created_at DESC`,
+      [projectId]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error('getJoinRequests hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
+  }
+};
+
+// POST /api/projects/:id/join-requests/:requestId/approve — Katılım talebini onayla
+const approveJoinRequest = async (req, res) => {
+  try {
+    const { id: projectId, requestId } = req.params;
+    const userId = req.user.id;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Proje bulunamadı.' });
+    }
+    if (project.created_by !== userId) {
+      return res.status(403).json({ message: 'Sadece proje sahibi katılım taleplerini onaylayabilir.' });
+    }
+
+    const request = await JoinRequest.findById(requestId);
+    if (!request || request.project_id != projectId || request.status !== 'pending') {
+      return res.status(404).json({ message: 'Geçersiz veya beklemeyen talep.' });
+    }
+
+    // Kapasite kontrolü
+    if (project.max_members !== null) {
+      const members = await ProjectMember.findByProject(projectId);
+      if (members.length >= project.max_members) {
+        return res.status(400).json({ message: 'Proje kontenjanı dolu. Üye eklenemez.' });
+      }
+    }
+
+    // 1. Talebi onayla
+    await JoinRequest.approve(requestId);
+
+    // 2. Üye ekle
+    const alreadyMember = await ProjectMember.isMember(projectId, request.user_id);
+    if (!alreadyMember) {
+      await pool.execute(
+        'INSERT INTO ProjectMembers (project_id, user_id, role) VALUES (?, ?, ?)',
+        [projectId, request.user_id, 'member']
+      );
+    }
+
+    // 3. Kullanıcıya onay bildirimi gönder
+    await Notification.create(
+      request.user_id,
+      'project_joined',
+      `"${project.name}" projesine katılım talebiniz onaylandı!`,
+      `/board/${projectId}`
+    );
+
+    res.json({ message: 'Katılım talebi onaylandı ve üye projeye eklendi.' });
+  } catch (error) {
+    console.error('approveJoinRequest hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
+  }
+};
+
+// POST /api/projects/:id/join-requests/:requestId/reject — Katılım talebini reddet
+const rejectJoinRequest = async (req, res) => {
+  try {
+    const { id: projectId, requestId } = req.params;
+    const userId = req.user.id;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Proje bulunamadı.' });
+    }
+    if (project.created_by !== userId) {
+      return res.status(403).json({ message: 'Sadece proje sahibi katılım taleplerini reddedebilir.' });
+    }
+
+    const request = await JoinRequest.findById(requestId);
+    if (!request || request.project_id != projectId || request.status !== 'pending') {
+      return res.status(404).json({ message: 'Geçersiz veya beklemeyen talep.' });
+    }
+
+    // 1. Talebi reddet
+    await JoinRequest.reject(requestId);
+
+    // 2. Kullanıcıya bildirim gönder
+    await Notification.create(
+      request.user_id,
+      'member_removed',
+      `"${project.name}" projesine katılım talebiniz reddedildi.`,
+      null
+    );
+
+    res.json({ message: 'Katılım talebi reddedildi.' });
+  } catch (error) {
+    console.error('rejectJoinRequest hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
+  }
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -237,4 +376,7 @@ module.exports = {
   addProjectMember,
   removeProjectMember,
   getProjectStats,
+  getJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
 };

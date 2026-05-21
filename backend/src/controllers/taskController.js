@@ -52,6 +52,16 @@ const createTask = async (req, res) => {
       estimatePoints || null
     );
 
+    // Atanan kişiye bildirim gönder (kendisi değilse)
+    if (assignedTo && assignedTo !== req.user.id) {
+      await Notification.create(
+        assignedTo,
+        'task_assigned',
+        `${req.user.username} sizi "${title.trim()}" görevine atadı.`,
+        `/board/${projectId}`
+      );
+    }
+
     res.status(201).json({
       message: 'Görev başarıyla oluşturuldu.',
       taskId: result.insertId,
@@ -245,9 +255,19 @@ const updateTask = async (req, res) => {
       estimatePoints || null
     );
 
-    // Atama değiştiyse ayrıca güncelle
+    // Atama değiştiyse ayrıca güncelle ve bildirim gönder
     if (assignedTo !== undefined && assignedTo != task.assigned_to) {
       await Task.updateAssignee(req.params.id, assignedTo || null);
+
+      // Yeni atanan kişiye bildirim gönder (kendisi değilse)
+      if (assignedTo && assignedTo !== req.user.id) {
+        await Notification.create(
+          assignedTo,
+          'task_assigned',
+          `${req.user.username} sizi "${title.trim()}" görevine atadı.`,
+          `/board/${task.project_id}`
+        );
+      }
     }
 
     res.json({ message: 'Görev güncellendi.' });

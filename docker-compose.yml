@@ -61,5 +61,19 @@ services:
       - backend
     command: npm run dev -- --host 0.0.0.0
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8085:80"
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=db
+      - PMA_USER=root
+      - PMA_PASSWORD=rootpassword
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   db_data:

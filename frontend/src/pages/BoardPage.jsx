@@ -18,6 +18,7 @@ const BoardPage = () => {
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [members, setMembers] = useState([]);
+  const [joinRequests, setJoinRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -55,7 +56,6 @@ const BoardPage = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Proje, görevler ve üyeleri API'den çek
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -67,6 +67,15 @@ const BoardPage = () => {
       setProject(projRes.data);
       setTasks(tasksRes.data);
       setMembers(membersRes.data);
+
+      if (projRes.data.created_by === user?.id) {
+        try {
+          const reqsRes = await api.get(`/projects/${projectId}/join-requests`);
+          setJoinRequests(reqsRes.data);
+        } catch (reqsErr) {
+          console.error('Katılım talepleri yüklenemedi:', reqsErr);
+        }
+      }
     } catch (err) {
       if (err.response?.status === 404) {
         setError('Proje bulunamadı.');
@@ -77,7 +86,7 @@ const BoardPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, user]);
 
   useEffect(() => {
     fetchData();
@@ -278,6 +287,35 @@ const BoardPage = () => {
       showToast('Üye çıkarıldı.');
     } catch (err) {
       showToast(err.response?.data?.message || 'İşlem başarısız.', 'danger');
+    }
+  };
+
+  // Katılım talebini onayla
+  const handleApproveRequest = async (requestId) => {
+    try {
+      await api.post(`/projects/${projectId}/join-requests/${requestId}/approve`);
+      showToast('Katılım talebi onaylandı! 🎉');
+      const [membersRes, reqsRes] = await Promise.all([
+        api.get(`/projects/${projectId}/members`),
+        api.get(`/projects/${projectId}/join-requests`),
+      ]);
+      setMembers(membersRes.data);
+      setJoinRequests(reqsRes.data);
+      window.dispatchEvent(new Event('projects-changed'));
+    } catch (err) {
+      showToast(err.response?.data?.message || 'İşlem başarısız oldu.', 'danger');
+    }
+  };
+
+  // Katılım talebini reddet
+  const handleRejectRequest = async (requestId) => {
+    try {
+      await api.post(`/projects/${projectId}/join-requests/${requestId}/reject`);
+      showToast('Katılım talebi reddedildi.');
+      const reqsRes = await api.get(`/projects/${projectId}/join-requests`);
+      setJoinRequests(reqsRes.data);
+    } catch (err) {
+      showToast(err.response?.data?.message || 'İşlem başarısız oldu.', 'danger');
     }
   };
 
@@ -617,6 +655,40 @@ const BoardPage = () => {
                       </button>
                     )}
                   </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bekleyen Katılım Talepleri */}
+          {isOwner && joinRequests.length > 0 && (
+            <div className="mt-3 pt-3 border-top">
+              <small className="text-warning fw-semibold d-block mb-2">⏳ Bekleyen Katılım Talepleri ({joinRequests.length})</small>
+              <div className="d-flex flex-column gap-2">
+                {joinRequests.map((req) => (
+                  <div key={req.id} className="d-flex align-items-center justify-content-between p-2 rounded bg-light border" style={{ fontSize: '13px' }}>
+                    <div>
+                      <strong>{req.username}</strong> <span className="text-muted">({req.email})</span>
+                    </div>
+                    <div className="d-flex gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-success py-1 px-2 fw-semibold"
+                        onClick={() => handleApproveRequest(req.id)}
+                        style={{ fontSize: '11px', borderRadius: '6px' }}
+                      >
+                        ✓ Onayla
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-danger py-1 px-2 fw-semibold"
+                        onClick={() => handleRejectRequest(req.id)}
+                        style={{ fontSize: '11px', borderRadius: '6px' }}
+                      >
+                        ✕ Reddet
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

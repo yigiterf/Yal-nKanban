@@ -42,6 +42,13 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Geliştirme ortamında stack trace logla
+  try {
+    const fs = require('fs');
+    fs.appendFileSync('/usr/src/app/src/error.log', `${new Date().toISOString()} - Error: ${err.message}\nStack: ${err.stack}\n\n`);
+  } catch (logErr) {
+    console.error('Log file write error:', logErr);
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     console.error('Error:', {
       statusCode,

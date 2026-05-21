@@ -12,11 +12,15 @@ const {
   addProjectMember,
   removeProjectMember,
   getProjectStats,
+  getJoinRequests,
+  approveJoinRequest,
+  rejectJoinRequest,
 } = require('../controllers/projectController');
 const { getProjectActivity } = require('../controllers/activityController');
 
 // Tüm proje rotaları JWT ile korunuyor
 router.use(authMiddleware);
+
 
 router.post('/', projectValidation, createProject);       // Proje oluştur
 router.get('/', getProjects);                              // Projeleri listele
@@ -28,6 +32,11 @@ router.delete('/:id', deleteProject);                      // Proje sil
 router.get('/:id/members', getProjectMembers);             // Üyeleri listele
 router.post('/:id/members', memberEmailValidation, addProjectMember);  // Üye ekle
 router.delete('/:id/members/:userId', removeProjectMember); // Üye çıkar
+
+// Katılım talepleri yönetimi
+router.get('/:id/join-requests', getJoinRequests);
+router.post('/:id/join-requests/:requestId/approve', approveJoinRequest);
+router.post('/:id/join-requests/:requestId/reject', rejectJoinRequest);
 
 // Proje istatistikleri ve aktivite
 router.get('/:id/stats', getProjectStats);                 // Proje istatistikleri

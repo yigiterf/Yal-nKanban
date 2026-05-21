@@ -55,6 +55,17 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth', authLimiter);
 
 // ─── API Rotaları ───
+app.get('/api/debug/db', async (req, res) => {
+  const pool = require('./src/config/db');
+  try {
+    const [rows] = await pool.query('SELECT * FROM Notifications ORDER BY id DESC LIMIT 5');
+    const [cols] = await pool.query('SHOW COLUMNS FROM Notifications');
+    res.json({ rows, cols });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -170,13 +181,42 @@ const runMigrations = async (connection) => {
         message TEXT NOT NULL,
         is_read BOOLEAN DEFAULT FALSE,
         link VARCHAR(255),
+        related_id INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
       )
     `);
     console.log('Notifications tablosu hazır.');
+
+    // Geçmiş veritabanları için related_id kolonu ekleme
+    try {
+      await connection.query(`ALTER TABLE Notifications ADD COLUMN related_id INT NULL`);
+      console.log('Notifications tablosuna related_id kolonu eklendi.');
+    } catch (colErr) {
+      console.error('Notifications related_id ekleme hatası:', colErr);
+    }
   } catch (err) {
     console.error('Notifications tablosu oluşturma hatası:', err);
+  }
+
+  // JoinRequests tablosu (proje katılım talepleri)
+  try {
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS JoinRequests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        user_id INT NOT NULL,
+        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP NULL,
+        UNIQUE KEY unique_join_request (project_id, user_id),
+        FOREIGN KEY (project_id) REFERENCES Projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+      )
+    `);
+    console.log('JoinRequests tablosu hazır.');
+  } catch (err) {
+    console.error('JoinRequests tablosu oluşturma hatası:', err);
   }
 
   // ─── İndeksler ───

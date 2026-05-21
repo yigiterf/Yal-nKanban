@@ -61,7 +61,7 @@ const MyTasks = () => {
   const [searchQuery, setSearchQuery]   = useState('');
   const [sortBy, setSortBy]             = useState('default');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [viewMode, setViewMode]         = useState('list');
+  const [viewMode, setViewMode]         = useState('list'); // 'list' | 'compact' | 'timeline'
   const [selectedIds, setSelectedIds]   = useState([]);
   const [bulkStatus, setBulkStatus]     = useState('in_progress');
   const [bulkDueDate, setBulkDueDate]   = useState('');
@@ -396,15 +396,31 @@ const MyTasks = () => {
             </button>
           </div>
 
-          {/* View Mode */}
+          {/* View Mode — 3 mod */}
           <div className="mytasks-filter-action">
-            <button
-              className="btn btn-sm btn-light border w-100 mytasks-filter-button"
-              onClick={() => setViewMode(prev => prev === 'list' ? 'timeline' : 'list')}
-              title={viewMode === 'list' ? 'Zaman çizelgesi' : 'Liste'}
-            >
-              {viewMode === 'list' ? 'Takvim' : 'Liste'}
-            </button>
+            <div className="btn-group w-100" role="group" aria-label="Görünüm">
+              <button
+                className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-light border'} mytasks-filter-button`}
+                onClick={() => setViewMode('list')}
+                title="Detaylı Liste"
+              >
+                ☰
+              </button>
+              <button
+                className={`btn btn-sm ${viewMode === 'compact' ? 'btn-primary' : 'btn-light border'} mytasks-filter-button`}
+                onClick={() => setViewMode('compact')}
+                title="Kompakt Liste"
+              >
+                ≡
+              </button>
+              <button
+                className={`btn btn-sm ${viewMode === 'timeline' ? 'btn-primary' : 'btn-light border'} mytasks-filter-button`}
+                onClick={() => setViewMode('timeline')}
+                title="Takvim"
+              >
+                📅
+              </button>
+            </div>
           </div>
 
           {/* Select All / Deselect */}
@@ -483,8 +499,122 @@ const MyTasks = () => {
         </div>
       )}
 
-      {/* Tasks List / Timeline */}
-      {viewMode === 'timeline' ? (
+      {/* Tasks — 3 Görünüm Modu */}
+      {viewMode === 'compact' ? (
+        <div className="card border-0 shadow-sm bg-white" style={{ borderRadius: '14px', overflow: 'hidden' }}>
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-5">
+              <div style={{ fontSize: '48px', opacity: 0.2 }}>🎉</div>
+              <p className="text-muted small mb-0 mt-2">Eşleşen görev yok</p>
+            </div>
+          ) : (
+            <div className="d-flex flex-column">
+              {/* Kompakt tablo başlığı */}
+              <div
+                className="d-flex align-items-center gap-2 px-3 py-2 border-bottom"
+                style={{ backgroundColor: '#f8fafc', fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}
+              >
+                <div style={{ width: 18 }} />
+                <div className="flex-grow-1">Görev</div>
+                <div style={{ width: 80 }}>Durum</div>
+                <div style={{ width: 70 }}>Öncelik</div>
+                <div style={{ width: 70 }}>Proje</div>
+                <div style={{ width: 60 }}>Tarih</div>
+                <div style={{ width: 48 }} />
+              </div>
+              {filteredTasks.map((task, idx) => {
+                const pr = priorityConfig[task.priority] || priorityConfig.medium;
+                const st = statusConfig[task.status] || statusConfig.todo;
+                const ds = getDueDateStatus(task.due_date);
+                const isSelected = selectedIds.includes(task.id);
+                return (
+                  <div
+                    key={task.id}
+                    className="d-flex align-items-center gap-2 px-3 py-2 compact-task-row"
+                    style={{
+                      borderBottom: idx < filteredTasks.length - 1 ? '1px solid #f1f5f9' : 'none',
+                      backgroundColor: isSelected ? 'rgba(99,102,241,0.04)' : task.status === 'done' ? '#fafafa' : 'white',
+                      transition: 'background 0.12s',
+                    }}
+                  >
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      className="form-check-input mt-0 flex-shrink-0"
+                      checked={isSelected}
+                      onChange={() => toggleSelect(task.id)}
+                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--custom-primary)' }}
+                    />
+                    {/* Başlık */}
+                    <div className="flex-grow-1 text-truncate">
+                      <span
+                        className="fw-semibold"
+                        style={{
+                          fontSize: '13px',
+                          color: 'var(--custom-text)',
+                          textDecoration: task.status === 'done' ? 'line-through' : 'none',
+                          opacity: task.status === 'done' ? 0.55 : 1,
+                        }}
+                      >
+                        {task.title}
+                      </span>
+                    </div>
+                    {/* Durum */}
+                    <span
+                      className="badge rounded-pill flex-shrink-0"
+                      style={{ backgroundColor: st.bg, color: st.color, border: `1px solid ${st.border}`, fontSize: '10px', padding: '3px 8px', width: 80, textAlign: 'center' }}
+                    >
+                      {st.icon} {st.label}
+                    </span>
+                    {/* Öncelik */}
+                    <span
+                      className="badge rounded-pill flex-shrink-0"
+                      style={{ backgroundColor: pr.bg, color: pr.color, border: `1px solid ${pr.border}`, fontSize: '10px', padding: '3px 8px', width: 70, textAlign: 'center' }}
+                    >
+                      {pr.label}
+                    </span>
+                    {/* Proje */}
+                    <Link
+                      to={`/board/${task.project_id}`}
+                      className="text-decoration-none text-truncate flex-shrink-0"
+                      style={{ fontSize: '11px', color: task.project_color || 'var(--custom-primary)', width: 70 }}
+                      title={task.project_name}
+                    >
+                      {task.project_emoji || '📁'} {task.project_name}
+                    </Link>
+                    {/* Tarih */}
+                    <span
+                      className="flex-shrink-0"
+                      style={{ width: 60, fontSize: '10px', color: ds ? ds.color : '#94a3b8', fontWeight: ds?.urgent ? 700 : 400, textAlign: 'right' }}
+                    >
+                      {ds ? ds.label : '—'}
+                    </span>
+                    {/* Hızlı durum */}
+                    <div className="d-flex gap-1 flex-shrink-0" style={{ width: 48 }}>
+                      {task.status !== 'in_progress' && (
+                        <button
+                          className="btn btn-sm p-0 border-0 text-muted"
+                          style={{ fontSize: '12px', lineHeight: 1, width: 20, height: 20 }}
+                          onClick={() => handleStatusChange(task.id, 'in_progress')}
+                          title="Başla"
+                        >⚙️</button>
+                      )}
+                      {task.status !== 'done' && (
+                        <button
+                          className="btn btn-sm p-0 border-0 text-muted"
+                          style={{ fontSize: '12px', lineHeight: 1, width: 20, height: 20 }}
+                          onClick={() => handleStatusChange(task.id, 'done')}
+                          title="Tamamlandı"
+                        >✅</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : viewMode === 'timeline' ? (
         <div className="mytasks-timeline d-flex flex-column gap-3">
           {timelineGroups.map(([dateKey, group]) => (
             <div key={dateKey} className="timeline-group">
