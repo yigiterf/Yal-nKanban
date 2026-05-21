@@ -40,7 +40,14 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete, isPulsing }) => {
       style={{
         borderRadius: '12px',
         borderLeft: `4px solid ${cfg.color}`,
-        cursor: 'grab',
+        cursor: 'pointer',
+      }}
+      onClick={(e) => {
+        // Dropdown menü tıklandığında kart tıklamasını yoksay
+        if (e.target.closest('.dropdown') || e.target.closest('.dropdown-menu')) {
+          return;
+        }
+        onEdit && onEdit(task);
       }}
     >
       <div className="card-body p-3">
@@ -172,10 +179,35 @@ const TaskCard = ({ task, onStatusChange, onEdit, onDelete, isPulsing }) => {
           </span>
 
           {/* Atanan kişi */}
-          {task.assigned_username && (
-            <span className="text-muted" style={{ fontSize: '11px' }}>
-              👤 {task.assigned_username}
-            </span>
+          {task.assigned_username ? (
+            <div 
+              className="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm"
+              style={{ 
+                width: '24px', 
+                height: '24px', 
+                fontSize: '9px', 
+                backgroundColor: 'var(--custom-primary)', 
+                color: 'white',
+                cursor: 'default'
+              }}
+              title={`Atanan: ${task.assigned_username}`}
+            >
+              {task.assigned_username.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+            </div>
+          ) : (
+            <div 
+              className="rounded-circle d-flex align-items-center justify-content-center text-muted"
+              style={{ 
+                width: '24px', 
+                height: '24px', 
+                fontSize: '10px', 
+                border: '1px dashed var(--surface-border-strong)',
+                backgroundColor: 'transparent'
+              }}
+              title="Atanmamış"
+            >
+              👤
+            </div>
           )}
         </div>
       </div>

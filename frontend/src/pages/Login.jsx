@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import PasswordStrengthInput from '../components/PasswordStrengthInput';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -9,23 +10,36 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  
+
   const { login, register } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Şifre güç kuralları (kayıt modunda)
+  const passwordRules = {
+    length:    password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    number:    /\d/.test(password),
+    special:   /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password),
+  };
+  const allRulesPassed = Object.values(passwordRules).every(Boolean);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
-    // Frontend validations
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('Lütfen geçerli bir e-posta adresi giriniz.');
       return;
     }
 
-    if (password.length < 6) {
+    if (!isLogin && !allRulesPassed) {
+      setError('Şifreniz tüm güvenlik kurallarını karşılamalıdır.');
+      return;
+    }
+
+    if (isLogin && password.length < 6) {
       setError('Şifreniz en az 6 karakter olmalıdır.');
       return;
     }
@@ -43,10 +57,18 @@ const Login = () => {
         await register(username, email, password);
         setSuccess('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
         setIsLogin(true);
+        setPassword('');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Bir hata oluştu.');
     }
+  };
+
+  const switchMode = () => {
+    setIsLogin(!isLogin);
+    setError(null);
+    setSuccess(null);
+    setPassword('');
   };
 
   return (
@@ -79,58 +101,80 @@ const Login = () => {
                 </p>
               </div>
 
-              {error && <div className="alert alert-danger">{error}</div>}
-              {success && <div className="alert alert-success">{success}</div>}
+              {error   && <div className="alert alert-danger py-2"   style={{ fontSize: '13px', borderRadius: '10px' }}>⚠️ {error}</div>}
+              {success && <div className="alert alert-success py-2" style={{ fontSize: '13px', borderRadius: '10px' }}>✅ {success}</div>}
 
               <form onSubmit={handleSubmit}>
                 {!isLogin && (
                   <div className="mb-3">
                     <label className="form-label">Kullanıcı Adı</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
+                    <input
+                      type="text"
+                      className="form-control"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      required 
+                      required
+                      placeholder="En az 3 karakter"
                     />
                   </div>
                 )}
 
                 <div className="mb-3">
                   <label className="form-label">E-posta</label>
-                  <input 
-                    type="email" 
-                    className="form-control" 
+                  <input
+                    type="email"
+                    className="form-control"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required 
+                    required
+                    placeholder="ornek@email.com"
                   />
                 </div>
 
-                <div className="mb-3">
-                  <label className="form-label">Şifre</label>
-                  <input 
-                    type="password" 
-                    className="form-control" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required 
-                  />
+                {/* Şifre Alanı: Kayıtta güçlü validator, girişte sade */}
+                <div className="mb-4">
+                  {!isLogin ? (
+                    <PasswordStrengthInput
+                      id="password"
+                      label="Şifre"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  ) : (
+                    <div>
+                      <label className="form-label">Şifre</label>
+                      <input
+                        type="password"
+                        className="form-control"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="Şifrenizi giriniz"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <button type="submit" className="btn btn-primary w-100">
-                  {isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
+                <button
+                  type="submit"
+                  className="btn btn-primary w-100 fw-semibold"
+                  style={{ borderRadius: '10px', padding: '10px' }}
+                  disabled={!isLogin && !allRulesPassed}
+                >
+                  {isLogin ? '🚀 Giriş Yap' : '✨ Kayıt Ol'}
                 </button>
               </form>
 
               <div className="text-center mt-3">
-                <button 
-                  className="btn btn-link text-decoration-none" 
-                  onClick={() => setIsLogin(!isLogin)}
+                <button
+                  className="btn btn-link text-decoration-none"
+                  style={{ fontSize: '13px' }}
+                  onClick={switchMode}
                 >
-                  {isLogin 
-                    ? 'Hesabınız yok mu? Kayıt Olun' 
-                    : 'Zaten hesabınız var mı? Giriş Yapın'}
+                  {isLogin
+                    ? 'Hesabınız yok mu? Kayıt Olun →'
+                    : '← Zaten hesabınız var mı? Giriş Yapın'}
                 </button>
               </div>
             </div>

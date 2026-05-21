@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import BoardPage from './pages/BoardPage';
 import MyTasks from './pages/MyTasks';
 import ProfilePage from './pages/ProfilePage';
+import DiscoverPage from './pages/DiscoverPage';
 import AppLayout from './layouts/AppLayout';
 import './App.css';
 
@@ -50,6 +51,14 @@ function App() {
             element={
               <PrivateRoute>
                 <AppLayout><BoardPage /></AppLayout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/discover"
+            element={
+              <PrivateRoute>
+                <AppLayout><DiscoverPage /></AppLayout>
               </PrivateRoute>
             }
           />

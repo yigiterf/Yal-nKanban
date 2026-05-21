@@ -13,6 +13,7 @@ const commentRoutes = require('./src/routes/commentRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
+const discoverRoutes = require('./src/routes/discoverRoutes');
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/discover', discoverRoutes);
 
 // Proje kapsamlı görev rotaları: /api/projects/:projectId/tasks
 const projectTaskRoutes = require('./src/routes/taskRoutes');

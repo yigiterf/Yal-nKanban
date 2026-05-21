@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import CommentSection from './CommentSection';
 
 const priorityOptions = [
@@ -24,6 +25,7 @@ const getDueDateStatus = (dueDate) => {
 };
 
 const TaskModal = ({ show, onClose, onSubmit, editingTask, members = [] }) => {
+  const { user } = useContext(AuthContext);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
@@ -263,9 +265,21 @@ const TaskModal = ({ show, onClose, onSubmit, editingTask, members = [] }) => {
 
                     {/* Atama Dropdown */}
                     <div className="mb-2">
-                      <label className="form-label">
-                        Atanan Kişi <small className="text-muted">(opsiyonel)</small>
-                      </label>
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <label className="form-label mb-0">
+                          Atanan Kişi <small className="text-muted">(opsiyonel)</small>
+                        </label>
+                        {user && String(assignedTo) !== String(user.id) && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-primary py-0 px-2 fw-medium"
+                            style={{ fontSize: '11px', borderRadius: '6px' }}
+                            onClick={() => setAssignedTo(String(user.id))}
+                          >
+                            🙋‍♂️ Görevi Kendime Ata
+                          </button>
+                        )}
+                      </div>
                       <select
                         className="form-select"
                         value={assignedTo}

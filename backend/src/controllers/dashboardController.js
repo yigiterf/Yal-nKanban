@@ -92,7 +92,9 @@ const getDashboardStats = async (req, res) => {
       if (day) day.completed = row.count;
     });
 
-    // 5. Kritik / Yaklaşan Görevler (Teslim tarihi 3 gün içinde olan ve bitmeyen görevler)
+    // 5. Kritik / Yaklaşan Görevler:
+    //    - Acil öncelikli (urgent) ve henüz tamamlanmamış görevler
+    //    - VEYA teslim tarihi 3 gün içinde olan ve bitmeyen görevler
     const [upcomingRows] = await pool.execute(
       `SELECT t.id, t.title, t.due_date, t.priority, t.status, t.project_id,
               p.name AS project_name, p.color AS project_color, p.emoji AS project_emoji
@@ -100,10 +102,15 @@ const getDashboardStats = async (req, res) => {
        INNER JOIN Projects p ON t.project_id = p.id
        WHERE t.assigned_to = ?
          AND t.status != 'done'
-         AND t.due_date IS NOT NULL
-         AND t.due_date <= DATE_ADD(CURDATE(), INTERVAL 3 DAY)
-       ORDER BY t.due_date ASC
-       LIMIT 5`,
+         AND (
+           t.priority = 'urgent'
+           OR (t.due_date IS NOT NULL AND t.due_date <= DATE_ADD(CURDATE(), INTERVAL 3 DAY))
+         )
+       ORDER BY
+         CASE WHEN t.priority = 'urgent' THEN 0 ELSE 1 END ASC,
+         CASE WHEN t.due_date IS NULL THEN 1 ELSE 0 END ASC,
+         t.due_date ASC
+       LIMIT 10`,
       [userId]
     );
 
