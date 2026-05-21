@@ -685,30 +685,28 @@ const BoardPage = () => {
       </div>
 
       {/* Filtreleme ve Arama Barı */}
-      <div className="card p-3 border-0 shadow-sm mb-4">
-        <div className="row g-3 align-items-center">
+      <div className="card p-3 border-0 shadow-sm mb-4 premium-filter-card">
+        <div className="premium-filter-grid">
           {/* Arama */}
-          <div className="col-12 col-md-5">
-            <div className="input-group">
+          <div className="premium-filter-search">
+            <div className="input-group premium-input-group">
               <span className="input-group-text bg-light border-0">🔍</span>
               <input
                 type="text"
-                className="form-control form-control-sm border-0 bg-light"
+                className="form-control form-control-sm border-0 bg-light premium-filter-control"
                 placeholder="Görevlerde ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ fontSize: '13px' }}
               />
             </div>
           </div>
 
           {/* Öncelik Filtresi */}
-          <div className="col-6 col-md-3">
+          <div className="premium-filter-field">
             <select
-              className="form-select form-select-sm border-0 bg-light"
+              className="form-select form-select-sm border-0 bg-light premium-filter-control"
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              style={{ fontSize: '13px' }}
             >
               <option value="all">Tüm Öncelikler</option>
               <option value="low">⬇️ Düşük</option>
@@ -719,12 +717,11 @@ const BoardPage = () => {
           </div>
 
           {/* Atanan Filtresi */}
-          <div className="col-6 col-md-3">
+          <div className="premium-filter-field">
             <select
-              className="form-select form-select-sm border-0 bg-light"
+              className="form-select form-select-sm border-0 bg-light premium-filter-control"
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
-              style={{ fontSize: '13px' }}
             >
               <option value="all">Tüm Atananlar</option>
               <option value="unassigned">👤 Atanmamış</option>
@@ -738,9 +735,9 @@ const BoardPage = () => {
 
           {/* Filtreleri Temizle */}
           {(searchQuery || priorityFilter !== 'all' || assigneeFilter !== 'all') && (
-            <div className="col-12 col-md-1 text-md-end">
+            <div className="premium-filter-action text-md-end">
               <button
-                className="btn btn-sm btn-link p-0 text-muted"
+                className="btn btn-sm btn-link p-0 text-muted premium-clear-button"
                 onClick={() => {
                   setSearchQuery('');
                   setPriorityFilter('all');

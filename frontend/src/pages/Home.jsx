@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 
 const Home = () => {
   return (
-    <div className="min-vh-100 d-flex flex-column" style={{ backgroundColor: 'var(--custom-bg)', color: 'var(--custom-text)' }}>
+    <div className="landing-page min-vh-100 d-flex flex-column" style={{ backgroundColor: 'var(--custom-bg)', color: 'var(--custom-text)' }}>
       {/* Navbar (Optional, minimal) */}
-      <nav className="navbar navbar-expand-lg navbar-light py-3 px-4 px-md-5">
+      <nav className="landing-nav navbar navbar-expand-lg navbar-light py-3 px-4 px-md-5">
         <Link className="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2" to="/" style={{ color: 'var(--custom-primary)' }}>
           <span style={{ fontSize: '1.5rem' }}>✨</span> YalınKanban
         </Link>
@@ -15,14 +15,14 @@ const Home = () => {
       </nav>
 
       {/* 1. Hero Section */}
-      <section className="flex-grow-1 d-flex align-items-center py-5">
+      <section className="landing-hero flex-grow-1 d-flex align-items-center py-5">
         <div className="container text-center">
           <div className="row justify-content-center">
             <div className="col-lg-8">
-              <span className="badge rounded-pill bg-white border border-primary px-3 py-2 mb-4 text-primary shadow-sm" style={{ fontWeight: 500 }}>
+              <span className="premium-kicker badge rounded-pill bg-white border border-primary px-3 py-2 mb-4 text-primary shadow-sm" style={{ fontWeight: 500 }}>
                 🚀 Yeni Nesil Proje Yönetimi
               </span>
-              <h1 className="display-4 fw-bold mb-4" style={{ letterSpacing: '-0.03em', color: 'var(--custom-text)' }}>
+              <h1 className="landing-title display-4 fw-bold mb-4" style={{ letterSpacing: '-0.03em', color: 'var(--custom-text)' }}>
                 Ekibiniz İçin En <span style={{ color: 'var(--custom-primary)' }}>Yalın</span> Kanban Deneyimi.
               </h1>
               <p className="lead mb-5 px-md-5 text-muted" style={{ lineHeight: '1.8' }}>
@@ -42,7 +42,7 @@ const Home = () => {
       </section>
 
       {/* 2. Özellikler (Features) Section */}
-      <section id="nasil-calisir" className="py-5 bg-white">
+      <section id="nasil-calisir" className="landing-section py-5">
         <div className="container py-5">
           <div className="text-center mb-5">
             <h2 className="fw-bold mb-3">Sevdiğiniz Özellikler, Yalınlaştı.</h2>
@@ -51,8 +51,8 @@ const Home = () => {
           <div className="row g-4">
             {/* Feature 1 */}
             <div className="col-md-6 col-lg-3">
-              <div className="card h-100 p-4 border-0 shadow-sm text-center card-hover-modern">
-                <div className="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 mx-auto" style={{ width: '64px', height: '64px', color: 'var(--custom-primary)', fontSize: '24px' }}>
+              <div className="feature-card card h-100 p-4 border-0 shadow-sm text-center card-hover-modern">
+                <div className="feature-icon d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 mx-auto" style={{ width: '64px', height: '64px', color: 'var(--custom-primary)', fontSize: '24px' }}>
                   📌
                 </div>
                 <h5 className="fw-bold">Sürükle-Bırak Panolar</h5>
@@ -61,8 +61,8 @@ const Home = () => {
             </div>
             {/* Feature 2 */}
             <div className="col-md-6 col-lg-3">
-              <div className="card h-100 p-4 border-0 shadow-sm text-center card-hover-modern">
-                <div className="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 mx-auto" style={{ width: '64px', height: '64px', color: 'var(--custom-accent)', fontSize: '24px' }}>
+              <div className="feature-card card h-100 p-4 border-0 shadow-sm text-center card-hover-modern">
+                <div className="feature-icon d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 mx-auto" style={{ width: '64px', height: '64px', color: 'var(--custom-accent)', fontSize: '24px' }}>
                   ⚡
                 </div>
                 <h5 className="fw-bold">Gerçek Zamanlı İşbirliği</h5>
@@ -71,8 +71,8 @@ const Home = () => {
             </div>
             {/* Feature 3 */}
             <div className="col-md-6 col-lg-3">
-              <div className="card h-100 p-4 border-0 shadow-sm text-center card-hover-modern">
-                <div className="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 mx-auto" style={{ width: '64px', height: '64px', color: 'var(--custom-secondary)', fontSize: '24px' }}>
+              <div className="feature-card card h-100 p-4 border-0 shadow-sm text-center card-hover-modern">
+                <div className="feature-icon d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 mx-auto" style={{ width: '64px', height: '64px', color: 'var(--custom-secondary)', fontSize: '24px' }}>
                   🎯
                 </div>
                 <h5 className="fw-bold">Önceliklendirme</h5>
@@ -81,8 +81,8 @@ const Home = () => {
             </div>
             {/* Feature 4 */}
             <div className="col-md-6 col-lg-3">
-              <div className="card h-100 p-4 border-0 shadow-sm text-center card-hover-modern">
-                <div className="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 mx-auto" style={{ width: '64px', height: '64px', color: '#6ee7b7', fontSize: '24px' }}>
+              <div className="feature-card card h-100 p-4 border-0 shadow-sm text-center card-hover-modern">
+                <div className="feature-icon d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 mx-auto" style={{ width: '64px', height: '64px', color: '#6ee7b7', fontSize: '24px' }}>
                   📊
                 </div>
                 <h5 className="fw-bold">Basit Analizler</h5>
@@ -94,7 +94,7 @@ const Home = () => {
       </section>
 
       {/* 3. Neden YalınKanban? (Comparison) */}
-      <section className="py-5" style={{ backgroundColor: 'var(--custom-secondary)' }}>
+      <section className="landing-cta py-5" style={{ backgroundColor: 'var(--custom-secondary)' }}>
         <div className="container py-5">
           <div className="row align-items-center justify-content-center">
             <div className="col-lg-8 text-center text-white">
@@ -111,7 +111,7 @@ const Home = () => {
       </section>
 
       {/* 4. Teknik Alt Yapı (Showcase) */}
-      <section className="py-5 bg-white">
+      <section className="landing-section py-5">
         <div className="container py-5 text-center">
           <h3 className="fw-bold mb-5" style={{ color: 'var(--custom-text)' }}>Modern Teknoloji ile Güçlendirildi.</h3>
           <div className="d-flex flex-wrap justify-content-center align-items-center gap-5 opacity-75">

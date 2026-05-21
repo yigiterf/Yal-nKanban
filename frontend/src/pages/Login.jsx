@@ -50,13 +50,13 @@ const Login = () => {
   };
 
   return (
-    <div className="container min-vh-100 d-flex align-items-center justify-content-center py-4">
+    <div className="auth-page container-fluid min-vh-100 d-flex align-items-center justify-content-center py-4">
       <div className="row justify-content-center w-100">
         <div className="col-md-8 col-lg-5">
-          <div className="card p-3 p-md-4">
+          <div className="auth-card card p-3 p-md-4">
             <div className="card-body">
               <div className="text-center mb-4">
-                <div style={{
+                <div className="auth-logo" style={{
                   width: '64px',
                   height: '64px',
                   background: 'linear-gradient(135deg, var(--custom-primary), var(--custom-secondary))',

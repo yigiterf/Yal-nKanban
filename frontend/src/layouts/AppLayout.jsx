@@ -65,10 +65,10 @@ const AppLayout = ({ children }) => {
   };
 
   return (
-    <div className="d-flex min-vh-100" style={{ backgroundColor: 'var(--custom-bg)' }}>
+    <div className="app-shell d-flex min-vh-100" style={{ backgroundColor: 'var(--custom-bg)' }}>
       {/* Sidebar */}
       <aside
-        className="d-flex flex-column bg-white shadow-sm transition-all"
+        className="app-sidebar d-flex flex-column bg-white shadow-sm transition-all"
         style={{ width: '280px', position: 'sticky', top: 0, height: '100vh', zIndex: 1000 }}
       >
         {/* Brand Header */}
@@ -82,7 +82,7 @@ const AppLayout = ({ children }) => {
           {/* Main Links */}
           <Link
             to="/dashboard"
-            className="d-flex align-items-center gap-3 p-3 rounded-3 text-decoration-none transition-all mb-1"
+            className={`sidebar-nav-link d-flex align-items-center gap-3 p-3 rounded-3 text-decoration-none transition-all mb-1 ${pathname === '/dashboard' ? 'is-active' : ''}`}
             style={{
               backgroundColor: pathname === '/dashboard' ? 'var(--custom-primary)' : 'transparent',
               color: pathname === '/dashboard' ? 'white' : 'var(--custom-text)',
@@ -95,7 +95,7 @@ const AppLayout = ({ children }) => {
 
           <Link
             to="/my-tasks"
-            className="d-flex align-items-center gap-3 p-3 rounded-3 text-decoration-none transition-all mb-3"
+            className={`sidebar-nav-link d-flex align-items-center gap-3 p-3 rounded-3 text-decoration-none transition-all mb-3 ${pathname === '/my-tasks' ? 'is-active' : ''}`}
             style={{
               backgroundColor: pathname === '/my-tasks' ? 'var(--custom-primary)' : 'transparent',
               color: pathname === '/my-tasks' ? 'white' : 'var(--custom-text)',
@@ -130,7 +130,7 @@ const AppLayout = ({ children }) => {
                   <Link
                     key={project.id}
                     to={`/board/${project.id}`}
-                    className="d-flex align-items-center justify-content-between p-2 rounded-3 text-decoration-none transition-all"
+                    className={`sidebar-project-link d-flex align-items-center justify-content-between p-2 rounded-3 text-decoration-none transition-all ${isProjectActive ? 'is-active' : ''}`}
                     style={{
                       backgroundColor: isProjectActive ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
                       color: 'var(--custom-text)',
@@ -185,7 +185,7 @@ const AppLayout = ({ children }) => {
           {/* Profile Section */}
           <Link
             to="/profile"
-            className="d-flex align-items-center gap-3 mb-3 p-2 rounded-3 text-decoration-none transition-all"
+            className={`sidebar-profile-link d-flex align-items-center gap-3 mb-3 p-2 rounded-3 text-decoration-none transition-all ${pathname === '/profile' ? 'is-active' : ''}`}
             style={{
               backgroundColor: pathname === '/profile' ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
               color: 'var(--custom-text)',
@@ -219,8 +219,8 @@ const AppLayout = ({ children }) => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-grow-1 d-flex flex-column" style={{ overflowY: 'auto', height: '100vh' }}>
-        <div className="p-4 p-md-5">
+      <main className="app-main flex-grow-1 d-flex flex-column" style={{ overflowY: 'auto', height: '100vh' }}>
+        <div className="app-content p-4 p-md-5">
           {children}
         </div>
       </main>

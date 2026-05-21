@@ -21,7 +21,7 @@ const KanbanBoard = ({ tasks, onStatusChange, onEditTask, onDeleteTask }) => {
         return (
           <div className="col-md-4" key={col.key}>
             <div
-              className={`rounded-4 p-3 h-100 transition-all ${isOver ? 'kanban-drop-active' : ''}`}
+              className={`kanban-column-surface rounded-4 p-3 h-100 transition-all ${isOver ? 'kanban-drop-active' : ''}`}
               style={{
                 backgroundColor: 'var(--card-bg, rgba(255, 255, 255, 0.4))',
                 border: isOver ? '1px dashed var(--custom-primary)' : '1px solid rgba(0,0,0,0.03)',
@@ -53,7 +53,7 @@ const KanbanBoard = ({ tasks, onStatusChange, onEditTask, onDeleteTask }) => {
               }}
             >
               {/* Kolon Başlığı */}
-              <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <div className="kanban-column-header d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                 <div className="d-flex align-items-center gap-2">
                   <span>{col.icon}</span>
                   <h6 className="fw-semibold mb-0" style={{ color: col.color, fontSize: '14px' }}>
@@ -101,11 +101,12 @@ const KanbanBoard = ({ tasks, onStatusChange, onEditTask, onDeleteTask }) => {
                 ))}
 
                 {columnTasks.length === 0 && (
-                  <div className="text-center text-muted py-5" style={{ fontSize: '13px' }}>
-                    <div style={{ fontSize: '28px', marginBottom: '8px', opacity: 0.3 }}>
+                  <div className="kanban-empty-state text-center text-muted py-5" style={{ fontSize: '13px' }}>
+                    <div className="empty-state-icon" style={{ fontSize: '28px', marginBottom: '8px', opacity: 0.3 }}>
                       {col.icon}
                     </div>
-                    Bu kolonda görev yok
+                    <div className="fw-semibold mb-1">Bu kolonda görev yok</div>
+                    <div className="small">Görevleri buraya sürükleyebilirsiniz.</div>
                   </div>
                 )}
               </div>
